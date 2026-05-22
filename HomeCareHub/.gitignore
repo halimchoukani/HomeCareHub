@@ -1,15 +1,19 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+# ========================
+# React Native / Expo Frontend .gitignore
+# ========================
 
-# dependencies
+# ---------- Dependencies ----------
 node_modules/
 
-# Expo
+# ---------- Expo ----------
 .expo/
 dist/
 web-build/
 expo-env.d.ts
 
-# Native
+# ---------- Native builds ----------
+/ios/
+/android/
 .kotlin/
 *.orig.*
 *.jks
@@ -17,35 +21,32 @@ expo-env.d.ts
 *.p12
 *.key
 *.mobileprovision
+*.pem
 
-# Metro
+# ---------- Metro ----------
 .metro-health-check*
 
-# debug
+# ---------- Debug ----------
 npm-debug.*
 yarn-debug.*
 yarn-error.*
 
-# macOS / Windows
+# ---------- OS ----------
 .DS_Store
 Thumbs.db
-*.pem
 
-# local env files
+# ---------- Environment ----------
 .env
 .env.*
 !.env.example
 
-# typescript
+# ---------- TypeScript ----------
 *.tsbuildinfo
 
-app-example
+# ---------- Expo example ----------
+app-example/
 
-# generated native folders
-/ios
-/android
-
-# IDE files
+# ---------- IDE ----------
 .vscode/
 .idea/
 *.suo
@@ -54,3 +55,6 @@ app-example
 *.sln
 *.sw?
 
+# ---------- Package manager locks (keep only one) ----------
+# yarn.lock
+# pnpm-lock.yaml

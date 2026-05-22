@@ -40,9 +40,11 @@ INSTALLED_APPS = [
     'rest_framework',
     'authentication',
     'home',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -80,11 +82,12 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'homecarehub',
         'USER': 'postgres',
-        'PASSWORD': 'admin1234',
+        'PASSWORD': 'postgrespw',   # ← matches Docker env var
         'HOST': 'localhost',
-        'PORT': '5432',  # ← port de PostgreSQL 17
+        'PORT': '5432',
     }
 }
+
 
 
 
@@ -124,9 +127,20 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     )
 }
+
+# ------------------------------------------------------------------
+# CORS (Cross-Origin Resource Sharing)
+# ------------------------------------------------------------------
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8081",   # Expo / React Native dev server
+    "http://127.0.0.1:8081",
+]

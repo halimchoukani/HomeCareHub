@@ -21,5 +21,5 @@ class MeView(APIView):
             "id": user.id,
             "username": user.username,
             "email": user.email,
-            "role" : user.role
+            "role" : "admin" if user.is_superuser else "user"
         })

@@ -1,12 +1,16 @@
-# Byte-compiled / optimized / DLL files
+# ========================
+# Django Backend .gitignore
+# ========================
+
+# ---------- Byte-compiled / optimized ----------
 __pycache__/
 *.py[cod]
 *$py.class
 
-# C extensions
+# ---------- C extensions ----------
 *.so
 
-# Distribution / packaging
+# ---------- Distribution / packaging ----------
 .Python
 build/
 develop-eggs/
@@ -26,17 +30,23 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+# ---------- Virtual environments ----------
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# ---------- PyInstaller ----------
 *.manifest
 *.spec
 
-# Installer logs
+# ---------- Installer logs ----------
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports
+# ---------- Unit test / coverage ----------
 htmlcov/
 .tox/
 .nox/
@@ -46,85 +56,49 @@ htmlcov/
 nosetests.xml
 coverage.xml
 *.cover
-*.log
 .hypothesis/
 .pytest_cache/
 cover/
 
-# Translations
+# ---------- Translations ----------
 *.mo
 *.pot
 
-# Django stuff:
+# ---------- Django ----------
 *.log
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
 media/
 staticfiles/
+static_collected/
 
-# Flask stuff:
-instance/
-.webassets-cache
+# ---------- Docker ----------
+postgres-data/
 
-# Scrapy stuff:
-.scrapy
-
-# Sphinx documentation
+# ---------- Sphinx ----------
 docs/_build/
 
-# PyBuilder
+# ---------- PyBuilder ----------
 .pybuilder/
 target/
 
-# Jupyter Notebook
+# ---------- Jupyter ----------
 .ipynb_checkpoints
 
-# IPython
+# ---------- IPython ----------
 profile_default/
 ipython_config.py
 
-# pyenv
-#   For a library or package, you might want to ignore these files since the code is
-#   intended to run in multiple environments; otherwise, check them in:
-# .python-version
-
-# pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if the platform does not support the same version of python, this file may cause issues
-# .env
-# .venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Spyder project settings
-.spyderproject
-.spyder-py3
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
+# ---------- Type checkers ----------
 .mypy_cache/
 .dmypy.json
 dmypy.json
-
-# Pyre type checker
 .pyre/
-
-# pytype static type analyzer
 .pytype/
-
-# Cython debug symbols
 cython_debug/
 
-# IDE files
+# ---------- IDE ----------
 .vscode/
 .idea/
 *.suo
@@ -133,7 +107,12 @@ cython_debug/
 *.sln
 *.sw?
 
-# Project-specific / Secrets
-firebase/secret.json
+# ---------- Environment / Secrets ----------
 .env
-*.env
+.env.*
+!.env.example
+firebase/secret.json
+
+# ---------- OS ----------
+.DS_Store
+Thumbs.db

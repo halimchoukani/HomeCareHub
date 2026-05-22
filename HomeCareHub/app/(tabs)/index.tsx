@@ -1,7 +1,21 @@
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import { StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { isUserLoggedIn } from '@/constants/api';
 
 export default function Index() {
+  const router = useRouter();
+
+  useEffect(() => {
+    checkLoginStatus();
+  }, []);
+
+  const checkLoginStatus = async () => {
+    const loggedIn = await isUserLoggedIn();
+    if (loggedIn) {
+      router.replace('/home');
+    }
+  };
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0D0D1A" />
@@ -13,8 +27,8 @@ export default function Index() {
 
       {/* Titre */}
       <Text style={styles.title}>Bienvenue</Text>
-      <Text style={styles.subtitle}>Contrôle d'Accès Intelligent</Text>
-<View style={{ height: 20 }} />
+      <Text style={styles.subtitle}>{"Contrôle d'Accès Intelligent"}</Text>
+      <View style={{ height: 20 }} />
 
 
       {/* Chips */}

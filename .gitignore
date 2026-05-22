@@ -1,4 +1,8 @@
-# IDE / Editor folders
+# ========================
+# HomeCareHub Root .gitignore
+# ========================
+
+# ---------- IDE / Editor ----------
 .vscode/
 .idea/
 *.suo
@@ -7,19 +11,28 @@
 *.sln
 *.sw?
 
-# OS / System files
+# ---------- OS / System ----------
 .DS_Store
 Thumbs.db
+Desktop.ini
+ehthumbs.db
+*.lnk
 
-# Debug logs
+# ---------- Debug Logs ----------
 *.log
 npm-debug.*
 yarn-debug.*
 yarn-error.*
 pip-log.txt
 
-# Local Environment / Secrets
+# ---------- Environment / Secrets ----------
 .env
 .env.*
 !.env.example
 secret.json
+
+# ---------- Docker ----------
+postgres-data/
+
+# ---------- Gemini / AI ----------
+.gemini/

@@ -5,11 +5,35 @@ import {
   Image, ActivityIndicator, TouchableOpacity,
   ScrollView, Linking, Alert
 } from 'react-native';
+import { Colors } from '@/constants/theme';
+import { ENDPOINTS } from '@/constants/config';
+import { authFetch } from '@/constants/api';
+
+interface ServiceItem {
+  id: number | string;
+  nom?: string;
+  name?: string;
+  description: string;
+  image: string;
+  telephone: string;
+  phone?: string;
+}
+
+interface PersonneItem {
+  id: number | string;
+  nom?: string;
+  name?: string;
+  role: string;
+  telephone: string;
+  phone?: string;
+  photo: string;
+  image?: string;
+}
 
 export default function Home() {
-  const [services,  setServices]  = useState([]);
-  const [personnes, setPersonnes] = useState([]);
-  const [loading,   setLoading]   = useState(true);
+  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [personnes, setPersonnes] = useState<PersonneItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
@@ -21,13 +45,31 @@ export default function Home() {
     setLoading(true);
     try {
       const [resServices, resPersonnes] = await Promise.all([
-        fetch('http://192.168.1.108:8000/api/services/'),
-        fetch('http://192.168.1.108:8000/api/personnes/'),
+        authFetch(ENDPOINTS.services),
+        authFetch(ENDPOINTS.personnes),
       ]);
-      const dataServices  = await resServices.json();
+      const dataServices = await resServices.json();
       const dataPersonnes = await resPersonnes.json();
-      setServices(dataServices);
-      setPersonnes(dataPersonnes);
+      
+      // Adapt field names if backend returns standard English names vs French names
+      const normalizedServices = dataServices.map((s: any) => ({
+        id: s.id,
+        nom: s.nom || s.name || '',
+        description: s.description || '',
+        image: s.image || '',
+        telephone: s.telephone || s.phone || '',
+      }));
+
+      const normalizedPersonnes = dataPersonnes.map((p: any) => ({
+        id: p.id,
+        nom: p.nom || p.name || '',
+        role: p.role || '',
+        telephone: p.telephone || p.phone || '',
+        photo: p.photo || p.image || '',
+      }));
+
+      setServices(normalizedServices);
+      setPersonnes(normalizedPersonnes);
     } catch (e) {
       console.error(e);
     } finally {
@@ -35,7 +77,7 @@ export default function Home() {
     }
   };
 
-  const handleAppeler = (telephone) => {
+  const handleAppeler = (telephone: string) => {
     Alert.alert(
       'Contacter',
       'Comment voulez-vous contacter ?',
@@ -53,7 +95,7 @@ export default function Home() {
     );
   };
 
-  const handleSupprimer = (id) => {
+  const handleSupprimer = (id: number | string) => {
     Alert.alert(
       'Supprimer',
       'Voulez-vous vraiment supprimer cette personne ?',
@@ -64,8 +106,8 @@ export default function Home() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const response = await fetch(
-                `http://192.168.1.108:8000/api/personnes/${id}/supprimer/`,
+              const response = await authFetch(
+                ENDPOINTS.supprimerPersonne(id),
                 {
                   method: 'DELETE',
                   headers: { 'Content-Type': 'application/json' },
@@ -88,7 +130,7 @@ export default function Home() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#7C3AED" />
+        <ActivityIndicator size="large" color={Colors.primary} />
         <Text style={styles.loadingText}>Chargement...</Text>
       </View>
     );
@@ -118,11 +160,17 @@ export default function Home() {
         scrollEnabled={false}
         renderItem={({ item }) => (
           <View style={styles.serviceCard}>
-            <Image
-              source={{ uri: item.image }}
-              style={styles.serviceImage}
-              resizeMode="cover"
-            />
+            {item.image ? (
+              <Image
+                source={{ uri: item.image }}
+                style={styles.serviceImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={[styles.serviceImage, { backgroundColor: Colors.primaryMuted, alignItems: 'center', justifyContent: 'center' }]}>
+                <Text style={{ fontSize: 24 }}>🛎️</Text>
+              </View>
+            )}
             <View style={styles.cardContent}>
               <Text style={styles.cardTitle}>{item.nom}</Text>
               <Text style={styles.cardDesc} numberOfLines={2}>
@@ -148,11 +196,17 @@ export default function Home() {
       ) : (
         personnes.map((item) => (
           <View key={item.id} style={styles.personneCard}>
-            <Image
-              source={{ uri: item.photo }}
-              style={styles.personnePhoto}
-              resizeMode="cover"
-            />
+            {item.photo ? (
+              <Image
+                source={{ uri: item.photo }}
+                style={styles.personnePhoto}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={[styles.personnePhoto, { backgroundColor: Colors.primaryMuted, alignItems: 'center', justifyContent: 'center' }]}>
+                <Text style={{ fontSize: 20 }}>👤</Text>
+              </View>
+            )}
             <View style={styles.personneInfo}>
               <Text style={styles.personneName}>{item.nom}</Text>
               <Text style={styles.personneRole}>{item.role}</Text>
@@ -184,18 +238,18 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0D0D1A',
+    backgroundColor: Colors.background,
     paddingHorizontal: 16,
     paddingTop: 50,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0D0D1A',
+    backgroundColor: Colors.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
   loadingText: {
-    color: '#A78BFA',
+    color: Colors.accent,
     marginTop: 12,
     fontSize: 16,
   },
@@ -207,61 +261,61 @@ const styles = StyleSheet.create({
   },
   logoCircle: {
     width: 52, height: 52, borderRadius: 26,
-    backgroundColor: '#1E1B3A', borderWidth: 2, borderColor: '#7C3AED',
+    backgroundColor: Colors.primaryMuted, borderWidth: 2, borderColor: Colors.primary,
     alignItems: 'center', justifyContent: 'center',
   },
-  logoEmoji:   { fontSize: 24 },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#FFFFFF' },
-  headerSub:   { fontSize: 13, color: '#6B7A99' },
+  logoEmoji: { fontSize: 24 },
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: Colors.text },
+  headerSub: { fontSize: 13, color: Colors.textSubtle },
   sectionTitle: {
     fontSize: 18, fontWeight: '700',
-    color: '#FFFFFF', marginBottom: 16, marginTop: 8,
+    color: Colors.text, marginBottom: 16, marginTop: 8,
   },
   row: { justifyContent: 'space-between', marginBottom: 16 },
   serviceCard: {
-    backgroundColor: '#13132A', borderRadius: 16,
-    width: '48%', borderWidth: 1, borderColor: '#2A2750', overflow: 'hidden',
+    backgroundColor: Colors.card, borderRadius: 16,
+    width: '48%', borderWidth: 1, borderColor: Colors.borderAlt, overflow: 'hidden',
   },
-  serviceImage:  { width: '100%', height: 120 },
-  cardContent:   { padding: 10 },
-  cardTitle:     { fontSize: 14, fontWeight: '700', color: '#FFFFFF', marginBottom: 4 },
-  cardDesc:      { fontSize: 12, color: '#6B7A99', lineHeight: 16, marginBottom: 8 },
-  appelerBtn:    { backgroundColor: '#7C3AED', paddingVertical: 8, borderRadius: 10, alignItems: 'center' },
-  appelerText:   { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
+  serviceImage: { width: '100%', height: 120 },
+  cardContent: { padding: 10 },
+  cardTitle: { fontSize: 14, fontWeight: '700', color: Colors.text, marginBottom: 4 },
+  cardDesc: { fontSize: 12, color: Colors.textSubtle, lineHeight: 16, marginBottom: 8 },
+  appelerBtn: { backgroundColor: Colors.primary, paddingVertical: 8, borderRadius: 10, alignItems: 'center' },
+  appelerText: { color: Colors.text, fontSize: 13, fontWeight: '700' },
   personneCard: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#13132A', borderRadius: 16,
+    backgroundColor: Colors.card, borderRadius: 16,
     padding: 12, marginBottom: 12,
-    borderWidth: 1, borderColor: '#2A2750',
+    borderWidth: 1, borderColor: Colors.borderAlt,
   },
   personnePhoto: {
     width: 60, height: 60, borderRadius: 30,
-    borderWidth: 2, borderColor: '#7C3AED',
+    borderWidth: 2, borderColor: Colors.primary,
   },
-  personneInfo:  { flex: 1, marginLeft: 12 },
-  personneName:  { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
-  personneRole:  { fontSize: 12, color: '#A78BFA', marginTop: 2 },
-  personnePhone: { fontSize: 12, color: '#6B7A99', marginTop: 2 },
+  personneInfo: { flex: 1, marginLeft: 12 },
+  personneName: { fontSize: 15, fontWeight: '700', color: Colors.text },
+  personneRole: { fontSize: 12, color: Colors.accent, marginTop: 2 },
+  personnePhone: { fontSize: 12, color: Colors.textSubtle, marginTop: 2 },
   actionBtns: {
     flexDirection: 'column',
     gap: 8,
   },
   callBtn: {
     width: 44, height: 44, borderRadius: 22,
-    backgroundColor: '#0D2D1A', borderWidth: 1, borderColor: '#16A34A',
+    backgroundColor: Colors.successMuted, borderWidth: 1, borderColor: Colors.successBorder,
     alignItems: 'center', justifyContent: 'center',
   },
-  callText:      { fontSize: 22 },
+  callText: { fontSize: 22 },
   supprimerBtn: {
     width: 44, height: 44, borderRadius: 22,
-    backgroundColor: '#2D1010', borderWidth: 1, borderColor: '#EF4444',
+    backgroundColor: Colors.dangerMuted, borderWidth: 1, borderColor: Colors.dangerBorder,
     alignItems: 'center', justifyContent: 'center',
   },
   supprimerText: { fontSize: 20 },
   emptyBox: {
-    backgroundColor: '#13132A', borderRadius: 16,
+    backgroundColor: Colors.card, borderRadius: 16,
     padding: 24, alignItems: 'center',
-    borderWidth: 1, borderColor: '#2A2750',
+    borderWidth: 1, borderColor: Colors.borderAlt,
   },
-  emptyText: { color: '#6B7A99', fontSize: 14 },
+  emptyText: { color: Colors.textSubtle, fontSize: 14 },
 });

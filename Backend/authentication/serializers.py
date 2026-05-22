@@ -13,9 +13,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         email = validated_data['email']
 
         user = User.objects.create_user(
-            username=email,  # auto use email
+            username=email,
             email=email,
-            role='user',  # default role
             password=validated_data['password']
         )
 

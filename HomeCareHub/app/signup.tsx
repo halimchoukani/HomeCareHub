@@ -5,14 +5,16 @@ import {
   StyleSheet, Text, TextInput,
   TouchableOpacity, View, Alert, ActivityIndicator
 } from 'react-native';
+import { Colors } from '@/constants/theme';
+import { ENDPOINTS } from '@/constants/config';
 
 export default function Signup() {
   const router = useRouter();
-  const [name, setName]         = useState('');
-  const [email, setEmail]       = useState('');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirm, setConfirm]   = useState('');
-  const [loading, setLoading]   = useState(false);
+  const [confirm, setConfirm] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSignup = async () => {
     if (!name || !email || !password || !confirm) {
@@ -29,10 +31,10 @@ export default function Signup() {
     }
     setLoading(true);
     try {
-      const response = await fetch('http://192.168.1.108:8000/api/auth/register/', {
+      const response = await fetch(ENDPOINTS.register, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ username: name, email, password }),
       });
       const data = await response.json();
       if (response.ok) {
@@ -42,6 +44,7 @@ export default function Signup() {
         Alert.alert('Erreur', data.error || 'Une erreur est survenue');
       }
     } catch (e) {
+      console.log(e);
       Alert.alert('Erreur', 'Impossible de contacter le serveur');
     } finally {
       setLoading(false);
@@ -148,46 +151,46 @@ export default function Signup() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0D0D1A' },
+  container: { flex: 1, backgroundColor: Colors.background },
   scrollContainer: { flexGrow: 1, justifyContent: 'center', padding: 24, paddingVertical: 40 },
   logoWrapper: { alignItems: 'center', marginBottom: 32 },
   logoCircle: {
     width: 80, height: 80, borderRadius: 40,
-    backgroundColor: '#1E1B3A', borderWidth: 2, borderColor: '#7C3AED',
+    backgroundColor: Colors.primaryMuted, borderWidth: 2, borderColor: Colors.primary,
     alignItems: 'center', justifyContent: 'center', marginBottom: 12,
-    shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 4 },
+    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.5, shadowRadius: 12, elevation: 8,
   },
   logoEmoji: { fontSize: 36 },
-  appName: { fontSize: 22, fontWeight: 'bold', color: '#FFFFFF', letterSpacing: 1 },
+  appName: { fontSize: 22, fontWeight: 'bold', color: Colors.text, letterSpacing: 1 },
   card: {
-    backgroundColor: '#13132A', borderRadius: 24, padding: 28,
-    borderWidth: 1, borderColor: '#2A2750',
+    backgroundColor: Colors.card, borderRadius: 24, padding: 28,
+    borderWidth: 1, borderColor: Colors.borderAlt,
     shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4, shadowRadius: 16, elevation: 10,
   },
-  title: { fontSize: 26, fontWeight: 'bold', color: '#FFFFFF', textAlign: 'center', marginBottom: 6 },
-  subtitle: { fontSize: 14, color: '#6B7A99', textAlign: 'center', marginBottom: 28 },
+  title: { fontSize: 26, fontWeight: 'bold', color: Colors.text, textAlign: 'center', marginBottom: 6 },
+  subtitle: { fontSize: 14, color: Colors.textSubtle, textAlign: 'center', marginBottom: 28 },
   inputGroup: { marginBottom: 16 },
-  label: { fontSize: 13, fontWeight: '600', color: '#A0A8C8', marginBottom: 8 },
+  label: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary, marginBottom: 8 },
   input: {
-    backgroundColor: '#0D0D1A', borderWidth: 1, borderColor: '#2A2750',
-    padding: 14, borderRadius: 12, fontSize: 15, color: '#FFFFFF',
+    backgroundColor: Colors.background, borderWidth: 1, borderColor: Colors.borderAlt,
+    padding: 14, borderRadius: 12, fontSize: 15, color: Colors.text,
   },
-  inputError: { borderColor: '#EF4444' },
-  errorText: { color: '#EF4444', fontSize: 12, marginTop: 4, marginLeft: 4 },
+  inputError: { borderColor: Colors.danger },
+  errorText: { color: Colors.danger, fontSize: 12, marginTop: 4, marginLeft: 4 },
   button: {
-    backgroundColor: '#7C3AED', padding: 16, borderRadius: 14,
+    backgroundColor: Colors.primary, padding: 16, borderRadius: 14,
     alignItems: 'center', marginTop: 8,
-    shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 6 },
+    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4, shadowRadius: 12, elevation: 6,
   },
   buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: '#FFFFFF', fontSize: 17, fontWeight: 'bold', letterSpacing: 0.5 },
+  buttonText: { color: Colors.text, fontSize: 17, fontWeight: 'bold', letterSpacing: 0.5 },
   separator: { flexDirection: 'row', alignItems: 'center', marginVertical: 20 },
-  separatorLine: { flex: 1, height: 1, backgroundColor: '#2A2750' },
+  separatorLine: { flex: 1, height: 1, backgroundColor: Colors.borderAlt },
   separatorText: { color: '#4A4E6A', paddingHorizontal: 12, fontSize: 13 },
   loginBtn: { alignItems: 'center' },
-  loginText: { color: '#6B7A99', fontSize: 14 },
-  loginHighlight: { color: '#A78BFA', fontWeight: '700' },
+  loginText: { color: Colors.textSubtle, fontSize: 14 },
+  loginHighlight: { color: Colors.accent, fontWeight: '700' },
 });

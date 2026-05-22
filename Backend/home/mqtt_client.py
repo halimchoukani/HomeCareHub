@@ -9,9 +9,7 @@ USERNAME = "HomeCareHub"
 PASSWORD = "YqV7G7sDAemZy2R"
 
 
-client = mqtt.Client(
-    mqtt.CallbackAPIVersion.VERSION2
-)
+client = mqtt.Client()
 
 
 def on_connect(client, userdata, flags, rc, properties=None):
