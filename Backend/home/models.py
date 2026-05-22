@@ -19,6 +19,7 @@ class Personne(models.Model):
     phone = models.CharField(max_length=20)
     image = models.ImageField(upload_to='personnes/')
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='autorise')
+    face_embedding = models.JSONField(blank=True, null=True, default=list)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

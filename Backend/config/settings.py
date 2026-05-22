@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'authentication',
     'home',
     'corsheaders',
+    'facerecognition',
 ]
 
 MIDDLEWARE = [

@@ -8,7 +8,7 @@ class ServiceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Service
-        fields = ['id', 'name', 'nom', 'description', 'image', 'phone', 'telephone']
+        fields = ['id', 'name', 'nom', 'description', 'image', 'phone', 'telephone','face_embedding']
 
 class PersonneSerializer(serializers.ModelSerializer):
     heure = serializers.SerializerMethodField()
@@ -17,12 +17,12 @@ class PersonneSerializer(serializers.ModelSerializer):
     class Meta:
         model = Personne
         fields = [
-            'id', 'name', 'role', 'phone', 'image', 'statut', 'heure', 'date', 'created_at'
+            'id', 'name', 'role', 'phone', 'image', 'statut', 'heure', 'date', 'created_at', 'face_embedding'
         ]
 
     def to_internal_value(self, data):
-        # Handle QueryDict / MultiValueDict mutable copy for multipart uploads
-        data_dict = data.dict() if hasattr(data, 'dict') else dict(data)
+        # Preserve uploaded files while still allowing key remapping.
+        data_dict = data.copy() if hasattr(data, 'copy') else dict(data)
         
         # 1. Translate 'nom' or 'name'
         if 'nom' in data_dict and 'name' not in data_dict:

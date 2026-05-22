@@ -24,6 +24,7 @@ urlpatterns = [
 
     path('api/auth/', include('authentication.urls')),
     path('api/', include('home.urls')),
+    path('api/face/', include('facerecognition.urls')),
 ]
 
 if settings.DEBUG:
