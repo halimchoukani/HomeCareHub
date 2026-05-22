@@ -1,0 +1,25 @@
+# IDE / Editor folders
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS / System files
+.DS_Store
+Thumbs.db
+
+# Debug logs
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+pip-log.txt
+
+# Local Environment / Secrets
+.env
+.env.*
+!.env.example
+secret.json
