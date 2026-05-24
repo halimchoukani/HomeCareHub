@@ -83,7 +83,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'homecarehub',
         'USER': 'postgres',
-        'PASSWORD': 'admin1234',   # ← matches Docker env var
+        'PASSWORD': 'postgrespw',   # ← matches Docker env var
         'HOST': 'localhost',
         'PORT': '5432',
     }

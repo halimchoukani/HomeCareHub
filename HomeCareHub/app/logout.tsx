@@ -1,21 +1,9 @@
-import { Link, useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { Link } from 'expo-router';
 import { StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { isUserLoggedIn } from '@/constants/api';
+import { useResponsive } from '../hooks/useResponsive';
 
-export default function Index() {
-  const router = useRouter();
-
-  useEffect(() => {
-    checkLoginStatus();
-  }, []);
-
-  const checkLoginStatus = async () => {
-    const loggedIn = await isUserLoggedIn();
-    if (loggedIn) {
-      router.replace('/home');
-    }
-  };
+export default function Logout() {
+  const { isDesktop } = useResponsive();
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0D0D1A" />
@@ -27,19 +15,13 @@ export default function Index() {
 
       {/* Titre */}
       <Text style={styles.title}>Bienvenue</Text>
-      <Text style={styles.subtitle}>{"Contrôle d'Accès Intelligent"}</Text>
-      <View style={{ height: 20 }} />
+      <Text style={styles.subtitle}>Contrôle d&apos;Accès Intelligent</Text>
+<View style={{ height: 20 }} />
 
 
-      {/* Chips */}
-      <View style={styles.chipsRow}>
-        <View style={styles.chip}><Text style={styles.chipText}>🤖 IA Faciale</Text></View>
-        <View style={styles.chip}><Text style={styles.chipText}>🔒 Sécurisé</Text></View>
-        <View style={styles.chip}><Text style={styles.chipText}>📡 Temps réel</Text></View>
-      </View>
 
       {/* Boutons */}
-      <View style={styles.buttonsWrapper}>
+      <View style={[styles.buttonsWrapper, isDesktop && { maxWidth: 400, alignSelf: 'center' }]}>
 
         {/* Se connecter — violet plein */}
         <Link href="/login" asChild>
@@ -57,8 +39,6 @@ export default function Index() {
 
       </View>
 
-      {/* Note sécurité */}
-      <Text style={styles.secNote}>Chiffrement AES-256 · Conforme RGPD</Text>
     </View>
   );
 }

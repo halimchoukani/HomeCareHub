@@ -1,62 +1,41 @@
+/**
+ * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
+ * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ */
+
 import { Platform } from 'react-native';
 
+const tintColorLight = '#0a7ea4';
+const tintColorDark = '#fff';
+
 export const Colors = {
-  // Boilerplate templates and Expo Router tab bar support (unified premium dark theme)
   light: {
-    text: '#FFFFFF',
-    background: '#0D0D1A',
-    tint: '#7C3AED',
-    icon: '#A78BFA',
-    tabIconDefault: '#8A8FAB',
-    tabIconSelected: '#7C3AED',
+    text: '#11181C',
+    background: '#fff',
+    tint: tintColorLight,
+    icon: '#687076',
+    tabIconDefault: '#687076',
+    tabIconSelected: tintColorLight,
   },
   dark: {
-    text: '#FFFFFF',
-    background: '#0D0D1A',
-    tint: '#7C3AED',
-    icon: '#A78BFA',
-    tabIconDefault: '#8A8FAB',
-    tabIconSelected: '#7C3AED',
+    text: '#ECEDEE',
+    background: '#151718',
+    tint: tintColorDark,
+    icon: '#9BA1A6',
+    tabIconDefault: '#9BA1A6',
+    tabIconSelected: tintColorDark,
   },
-
-  // Brand specific premium styling flat tokens
-  background: '#0D0D1A',
-  card: '#13132A',
-  border: '#2E2B52',
-  borderAlt: '#2A2750',
-  primary: '#7C3AED',
-  primaryMuted: '#1E1B3A',
-  accent: '#A78BFA',
-  accentMuted: '#2D1B6B',
-  text: '#FFFFFF',
-  textSecondary: '#B0B8D4',
-  textMuted: '#8A8FAB',
-  textSubtle: '#6B7A99',
-  
-  // Status Colors
-  success: '#4ADE80',
-  successMuted: '#0D2D1A',
-  successBorder: '#16A34A',
-  
-  danger: '#F87171',
-  dangerMuted: '#2D1010',
-  dangerMutedAlt: '#1A0808',
-  dangerBorder: '#EF4444',
-  
-  warning: '#FACC15',
-  warningMuted: '#1A1200',
-  warningBorder: '#713F12',
-  
-  info: '#06B6D4',
-  infoMuted: '#051A22',
-  infoBorder: '#0E4A5A',
 };
 
 export const Fonts = Platform.select({
   ios: {
+    /** iOS `UIFontDescriptorSystemDesignDefault` */
     sans: 'system-ui',
+    /** iOS `UIFontDescriptorSystemDesignSerif` */
     serif: 'ui-serif',
+    /** iOS `UIFontDescriptorSystemDesignRounded` */
     rounded: 'ui-rounded',
+    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
     mono: 'ui-monospace',
   },
   default: {
