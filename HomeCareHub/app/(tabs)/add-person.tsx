@@ -6,10 +6,12 @@ import {
   ActivityIndicator, Alert, Image, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useUser } from '../../contexts/UserContext';
 import { useResponsive } from '../../hooks/useResponsive';
 
 export default function AddPerson() {
   const router = useRouter();
+  const { token } = useUser();
   const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
@@ -66,17 +68,20 @@ export default function AddPerson() {
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append('nom', name);
-      formData.append('role', role);
-      formData.append('telephone', phone);
+      formData.append('nom', name.trim());
+      formData.append('role', role.trim());
+      formData.append('telephone', phone.trim());
       formData.append('photo', {
         uri: photo.uri,
         name: 'photo.jpg',
         type: 'image/jpeg',
       } as any);
 
-      const response = await fetch(`${API_URL}/api/home/users/`, {
+      const response = await fetch(`${API_URL}/api/personnes/ajouter/`, {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
         body: formData,
       });
       const data = await response.json();

@@ -25,7 +25,10 @@ SECRET_KEY = 'django-insecure-k81td(demqk)h*^(3gud__j+%e=+-l)#oe340yx95gnw+9*fyu
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+        'localhost',
+        '192.168.1.3',  # Replace with your machine's local IP address
+]
 
 
 # Application definition
@@ -83,7 +86,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'homecarehub',
         'USER': 'postgres',
-        'PASSWORD': 'postgrespw',   # ← matches Docker env var
+        'PASSWORD': 'admin1234',   # ← matches Docker env var
         'HOST': 'localhost',
         'PORT': '5432',
     }
@@ -144,4 +147,5 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8081",   # Expo / React Native dev server
     "http://127.0.0.1:8081",
+    "http://192.168.1.3:8081",  # Replace with your machine's local IP address
 ]

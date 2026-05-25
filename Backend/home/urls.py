@@ -10,6 +10,7 @@ from .views import (
 urlpatterns = [
     path('services/', ServiceView.as_view()),
     path('personnes/', PersonneView.as_view()),
+    path('personnes/<int:pk>/', PersonneView.as_view()),
     path('personnes/ajouter/', PersonneAjouterView.as_view()),
     path('personnes/check-face/', PersonneCheckFaceView.as_view()),
     path('personnes/<int:pk>/supprimer/', PersonneSupprimerView.as_view()),
