@@ -1,21 +1,29 @@
 import { Stack, usePathname, useRouter } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
 import { useEffect } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { SocketProvider } from '../contexts/SocketContext';
 import { UserProvider, useUser } from '../contexts/UserContext';
 import { useResponsive } from '../hooks/useResponsive';
 
 function RootRedirector() {
-  const { user, loading } = useUser();
+  const { user, loading, deviceId } = useUser();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
     if (loading) return;
     if (pathname === '/') {
-      if (user) router.replace('/home');
-      else router.replace('/login');
+      if (user) {
+        if (deviceId) {
+          router.replace('/home');
+        } else {
+          router.replace('/join-device');
+        }
+      } else {
+        router.replace('/login');
+      }
     }
-  }, [loading, user, pathname, router]);
+  }, [loading, user, pathname, router, deviceId]);
 
   return null;
 }
@@ -28,24 +36,26 @@ export default function Layout() {
 
   return (
     <UserProvider>
-      <RootRedirector />
-      <View style={[
-        styles.rootContainer,
-        isDesktop && styles.desktopRoot,
-        isDesktop && isAuthPage && styles.desktopCenterAuth,
-      ]}>
+      <SocketProvider>
+        <RootRedirector />
         <View style={[
-          styles.contentContainer,
-          isDesktop && { maxWidth: contentMaxWidth },
-          isDesktop && !isAuthPage && { flex: 1, alignSelf: 'center' },
+          styles.rootContainer,
+          isDesktop && styles.desktopRoot,
+          isDesktop && isAuthPage && styles.desktopCenterAuth,
         ]}>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="login" />
-            <Stack.Screen name="signup" />
-            <Stack.Screen name="forgot-password" />
-          </Stack>
+          <View style={[
+            styles.contentContainer,
+            isDesktop && { maxWidth: contentMaxWidth },
+            isDesktop && !isAuthPage && { flex: 1, alignSelf: 'center' },
+          ]}>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="login" />
+              <Stack.Screen name="signup" />
+              <Stack.Screen name="forgot-password" />
+            </Stack>
+          </View>
         </View>
-      </View>
+      </SocketProvider>
     </UserProvider>
   );
 }

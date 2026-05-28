@@ -18,7 +18,7 @@ export const setAuthToken = (token: string | null | undefined) => {
 export const useLogin = async (email: string, password: string) => {
   try {
     const response = await api.post("/api/auth/login/", {
-      username: email,
+      email: email,
       password,
     });
     return response.data;

@@ -1,17 +1,18 @@
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { API_URL } from '../../constants/api';
-import * as ImagePicker from 'expo-image-picker';
 import {
   ActivityIndicator, Alert, Image, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { API_URL } from '../../constants/api';
 import { useUser } from '../../contexts/UserContext';
 import { useResponsive } from '../../hooks/useResponsive';
 
 export default function AddPerson() {
   const router = useRouter();
-  const { token } = useUser();
+  const { token, user } = useUser();
+
   const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
@@ -77,7 +78,7 @@ export default function AddPerson() {
         type: 'image/jpeg',
       } as any);
 
-      const response = await fetch(`${API_URL}/api/personnes/ajouter/`, {
+      const response = await fetch(`${API_URL}/api/devices/ajouter/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

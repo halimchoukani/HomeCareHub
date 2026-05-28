@@ -5,7 +5,7 @@ import React, {
   useState,
   type ReactNode,
 } from "react";
-import { api, setAuthToken } from "../constants/api";
+import { api, API_URL, setAuthToken } from "../constants/api";
 import storage from "./storage";
 
 interface User {
@@ -18,10 +18,12 @@ interface User {
 
 interface UserContextType {
   user: User | null;
+  deviceId: string | null;
+  setDeviceId: (id: string | null) => void;
   token: string | null;
   role: string | null;
   loading: boolean;
-  login: (userData: Record<string, unknown>) => Promise<void>;
+  login: (userData: Record<string, unknown>) => Promise<string | null | void>;
   logout: () => Promise<void>;
 }
 
@@ -35,11 +37,52 @@ export const useUser = () => {
   return context;
 };
 
+export const getCurrentUser = async () => {
+  try {
+    const tokenData = await storage.getItem("token");
+    const token = JSON.parse(tokenData as string) as string;
+    const resourceResponse = await api.get("/api/auth/me/", {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    const resourceData: User = resourceResponse.data;
+    return resourceData;
+  } catch (err) {
+    console.error("Failed fetching user resource", err);
+    throw err;
+  }
+}
+
+export const getDeviceId = async () => {
+  try {
+    const tokenData = await storage.getItem("token");
+    const token = JSON.parse(tokenData as string) as string;
+    const deviceData = await fetch(`${API_URL}/api/devices/userDevices/`, {
+      method: "GET",
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    if (!deviceData.ok) {
+      throw new Error("Failed to fetch device id");
+    }
+    const data = await deviceData.json();
+    return data[0];
+  } catch (err) {
+    console.error("Failed fetching device id", err);
+    throw err;
+  }
+}
+
+
 export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-
+  const [deviceId, setDeviceId] = useState<string | null>(null);
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -47,7 +90,13 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           storage.getItem("user"),
           storage.getItem("token"),
         ]);
-        if (userData) setUser(JSON.parse(userData));
+        const data = await getCurrentUser();
+        console.log("data : ", data);
+        if (userData) {
+
+
+          setUser(data);
+        };
         if (tokenData) {
           const parsed = JSON.parse(tokenData) as string;
           setToken(parsed);
@@ -61,9 +110,24 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     };
     loadUser();
   }, []);
+  useEffect(() => {
+    const loadDeviceId = async () => {
+      try {
+        const deviceData = await getDeviceId();
+        if (deviceData) {
+          setDeviceId(deviceData);
+        };
+      } catch (error) {
+        console.error("Error loading user data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadDeviceId();
+  }, []);
 
   const login = async (userData: Record<string, unknown>) => {
-    const jwt = userData.access as string;
+    const jwt = (userData.token || userData.access) as string;
     setAuthToken(jwt);
     try {
       const resourceResponse = await api.get("/api/auth/me/");
@@ -72,6 +136,17 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       setToken(jwt);
       await storage.setItem("user", JSON.stringify(resourceData));
       await storage.setItem("token", JSON.stringify(jwt));
+      
+      let fetchedDeviceId = null;
+      try {
+        fetchedDeviceId = await getDeviceId();
+        if (fetchedDeviceId) {
+          setDeviceId(fetchedDeviceId);
+        }
+      } catch (e) {
+        console.error("No device id found during login");
+      }
+      return fetchedDeviceId;
     } catch (err) {
       console.error("Failed fetching user resource", err);
       throw err;
@@ -88,6 +163,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   const value: UserContextType = {
     user,
+    deviceId,
+    setDeviceId,
     token,
     role: user?.role || null,
     loading,

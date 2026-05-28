@@ -1,0 +1,6 @@
+{
+  "name": "HomeCareHub Admin Dashboard",
+  "description": "A premium web admin dashboard for the HomeCareHub platform to manage users, IoT health devices, active states, and real-time alerts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -4,6 +4,7 @@ import prisma from '../db';
 import { getUserIdFromToken } from '../middlewares/authMiddleware';
 import { getFaceEmbadding } from '../services/face';
 const { uploadImageToCloudinary } = require('./cloudinaryController');
+import mqtt from 'mqtt';
 
 export const createDevice = async (req: Request, res: Response) => {
   try {
@@ -215,6 +216,84 @@ export const isAssignedToUser = async ({ deviceId, userId }: { deviceId: number,
   } catch (error) {
     console.error('isAssignedToUser error:', error);
     return false;
+  }
+};
+
+export const sendSensorData = async (req: Request, res: Response) => {
+  try {
+    const { deviceId } = req.params;
+    const userId = getUserIdFromToken(req.headers.authorization?.split(' ')[1] || '');
+    const isAssigned = await isAssignedToUser({ deviceId: parseInt(deviceId as string, 10), userId });
+
+    if (!isAssigned) {
+      return res.status(403).json({ error: 'You do not have permission to perform this action' });
+    }
+
+    const { sensorType, value } = req.body;
+
+    if (!sensorType || value === undefined) {
+      return res.status(400).json({ error: 'sensorType and value are required' });
+    }
+
+    const hivemqUrl = process.env.HIVEMQ_URL || '';
+    const hivemqUsername = process.env.HIVEMQ_USERNAME || '';
+    const hivemqPassword = process.env.HIVEMQ_PASSWORD || '';
+
+    if (!hivemqUrl) {
+      return res.status(500).json({ error: 'HiveMQ Cloud configuration is missing in .env' });
+    }
+
+    const client = mqtt.connect(hivemqUrl, {
+      username: hivemqUsername,
+      password: hivemqPassword,
+      clientId: `server_${deviceId}_${Date.now()}`
+    });
+
+    client.on('connect', () => {
+      const topic = `homecarehub/devices/${deviceId}/sensors/${sensorType}`;
+      const payload = JSON.stringify({ value, timestamp: new Date() });
+
+      client.publish(topic, payload, (err) => {
+        client.end();
+        if (err) {
+          console.error('MQTT publish error:', err);
+          return res.status(500).json({ error: 'Failed to publish sensor data' });
+        }
+        res.status(200).json({ success: true, message: 'Sensor data published successfully', topic });
+      });
+    });
+
+    client.on('error', (err) => {
+      console.error('MQTT connection error:', err);
+      client.end();
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Failed to connect to MQTT broker' });
+      }
+    });
+
+  } catch (error) {
+    console.error('sendSensorData error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to send sensor data' });
+    }
+  }
+};
+
+
+export const getUserDevices = async (req: Request, res: Response) => {
+  try {
+    const userId = getUserIdFromToken(req.headers.authorization?.split(' ')[1] || '');
+    const devices = await prisma.device.findMany({
+      where: { userId },
+      select: { id: true },
+    });
+    if (!devices) {
+      return res.status(404).json({ error: 'Devices not found' });
+    }
+    res.status(200).json(devices.map((device) => device.id));
+  } catch (error) {
+    console.error('getUserDevices error:', error);
+    res.status(500).json({ error: 'Failed to get user devices' });
   }
 };
 

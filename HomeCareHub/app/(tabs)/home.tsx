@@ -1,7 +1,17 @@
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
-  ActivityIndicator, Alert, FlatList, Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Linking,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { API_URL } from '../../constants/api';
 import { useUser } from '../../contexts/UserContext';
@@ -9,61 +19,106 @@ import { useResponsive } from '../../hooks/useResponsive';
 
 interface Service {
   id: number;
-  nom: string;
-  image: string;
-  telephone: string;
+  name: string;
+  lastName: string;
+  facePhoto: string;
+  phone: string;
 }
 
 interface Personne {
   id: number;
-  nom: string;
+  name: string;
+  lastName: string;
   role: string;
-  telephone: string;
-  photo: string;
-  statut: string;
+  phone: string;
+  facePhoto: string;
+  isActive: boolean;
+
 }
 
 export default function Home() {
   const router = useRouter();
-  const { token, logout } = useUser();
+  const { user, token, logout, deviceId } = useUser();
+  const { columnCount } = useResponsive();
+
   const [services, setServices] = useState<Service[]>([]);
   const [personnes, setPersonnes] = useState<Personne[]>([]);
   const [loading, setLoading] = useState(true);
-  const { columnCount } = useResponsive();
+  const [refreshing, setRefreshing] = useState(false);
 
-  const headers = {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`,
+  const fetchData = async () => {
+    if (!token || !deviceId) return;
+
+    try {
+      const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      };
+
+      const [personnesRes, servicesRes] = await Promise.all([
+        fetch(`${API_URL}/api/devices/${deviceId}/persons/`, {
+          headers,
+        }),
+        fetch(`${API_URL}/api/services/`, {
+          headers,
+        }).catch(() => null),
+      ]);
+
+      if (!personnesRes.ok) {
+        throw new Error('Failed loading persons');
+      }
+
+      const personnesData = await personnesRes.json();
+      setPersonnes(
+        Array.isArray(personnesData) ? personnesData : []
+      );
+      console.log("personnesData : ", personnesData);
+    } catch (error) {
+      console.error(error);
+      Alert.alert(
+        'Erreur',
+        'Impossible de charger les données'
+      );
+    }
   };
 
   useFocusEffect(
     useCallback(() => {
-      fetchData();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [token])
+      setLoading(true);
+
+      fetchData().finally(() => {
+        setLoading(false);
+      });
+    }, [token, deviceId])
   );
 
-  const fetchData = async () => {
-    if (!token) return;
-    setLoading(true);
-    try {
-      const [resServices, resPersonnes] = await Promise.all([
-        fetch(`${API_URL}/api/services/`, { headers }),
-        fetch(`${API_URL}/api/personnes/`, { headers }),
-      ]);
-      const dataServices = await resServices.json();
-      const dataPersonnes = await resPersonnes.json();
-      setServices(dataServices);
-      setPersonnes(dataPersonnes);
-    } catch {
-      Alert.alert('Erreur', 'Impossible de charger les données');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
 
-  const handleAppeler = (telephone: string) => {
-    Linking.openURL(`tel:${telephone}`);
+    fetchData().finally(() => {
+      setRefreshing(false);
+    });
+  }, [token, deviceId]);
+
+  const handleAppeler = async (telephone: string) => {
+    try {
+      const url = `tel:${telephone}`;
+      const supported = await Linking.canOpenURL(url);
+
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert(
+          'Erreur',
+          'Impossible d’ouvrir le téléphone'
+        );
+      }
+    } catch {
+      Alert.alert(
+        'Erreur',
+        'Impossible de lancer l’appel'
+      );
+    }
   };
 
   const handleLogout = async () => {
@@ -71,88 +126,253 @@ export default function Home() {
     router.replace('/');
   };
 
-  if (loading) {
+  if (loading && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#7C3AED" />
+        <ActivityIndicator
+          size="large"
+          color="#7C3AED"
+        />
       </View>
     );
   }
 
-  return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>HomeCareHub</Text>
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Déconnexion</Text>
-        </TouchableOpacity>
-      </View>
+  const username =
+    user?.username || (user?.name as string) || 'Utilisateur';
 
-      <Text style={styles.sectionTitle}>Nos Services</Text>
-      {services.length > 0 ? (
-        <FlatList
-          data={services}
-          key={`col-${columnCount}`}
-          keyExtractor={(item) => item.id.toString()}
-          numColumns={columnCount}
-          columnWrapperStyle={columnCount > 1 ? styles.row : undefined}
-          scrollEnabled={false}
-          renderItem={({ item }) => (
-            <View style={[styles.serviceCard, { width: `${100 / columnCount - 2}%` }]}>
-              {item.image && <Image source={{ uri: item.image }} style={styles.serviceImage} />}
-              <Text style={styles.cardTitle}>{item.nom}</Text>
-              {item.telephone && (
-                <TouchableOpacity style={styles.appelerBtn} onPress={() => handleAppeler(item.telephone)}>
-                  <Text style={styles.appelerText}>Appeler</Text>
-                </TouchableOpacity>
+  const authorizedPersons = personnes.filter(
+    (p) =>
+      p.isActive
+  );
+
+  return (
+    <View style={styles.root}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={
+          styles.contentContainer
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#7C3AED"
+          />
+        }
+      >
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.greeting}>
+              Bonjour, {username || "Utilisateur"} 👋
+            </Text>
+            <Text style={styles.subtitle}>
+              Bienvenue sur HomeCareHub
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.logoutBtn}
+            onPress={handleLogout}
+          >
+            <Ionicons
+              name="log-out-outline"
+              size={24}
+              color="#EF4444"
+            />
+          </TouchableOpacity>
+        </View>
+
+        {/* PERSONNES */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>
+            Personnes autorisées
+          </Text>
+          <Feather
+            name="users"
+            size={20}
+            color="#5BEF8A"
+          />
+        </View>
+
+        {authorizedPersons.map((item) => (
+          <View
+            key={item.id}
+            style={styles.personneCard}
+          >
+            {/* Avatar */}
+            <View style={styles.avatarContainer}>
+              {item.facePhoto ? (
+                <Image source={{ uri: item.facePhoto }} style={styles.avatar} />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Ionicons
+                    name="person"
+                    size={24}
+                    color="#A0A8C8"
+                  />
+                </View>
               )}
             </View>
-          )}
-        />
-      ) : (
-        <Text style={styles.emptyText}>Aucun service disponible</Text>
-      )}
 
-      <Text style={styles.sectionTitle}>Personnes autorisées</Text>
-      {personnes.length > 0 ? (
-        personnes.filter(p => p.statut === 'autorise').map((item) => (
-          <View key={item.id} style={styles.personneCard}>
-            {item.photo && <Image source={{ uri: item.photo }} style={styles.personnePhoto} />}
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.personneName}>{item.nom}</Text>
-              <Text style={styles.personneRole}>{item.role}</Text>
+            <View style={styles.personneInfo}>
+              <Text style={styles.personneName}>
+                {item.name + " " + item.lastName}
+              </Text>
+              <Text style={styles.personneRole}>
+                {item.role}
+              </Text>
             </View>
-            {item.telephone && (
-              <TouchableOpacity onPress={() => handleAppeler(item.telephone)}>
-                <Text style={{ fontSize: 24 }}>📞</Text>
+
+            {!!item.phone && (
+              <TouchableOpacity
+                onPress={() =>
+                  handleAppeler(
+                    item.phone
+                  )
+                }
+              >
+                <Ionicons
+                  name="call"
+                  size={22}
+                  color="#5BEF8A"
+                />
               </TouchableOpacity>
             )}
           </View>
-        ))
-      ) : (
-        <Text style={styles.emptyText}>Aucune personne autorisée</Text>
-      )}
-    </ScrollView>
+        ))}
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0D0D1A', padding: 16 },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0D0D1A' },
-  header: { marginTop: 40, marginBottom: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#FFFFFF' },
-  logoutBtn: { backgroundColor: '#EF4444', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-  logoutText: { color: '#FFFFFF', fontWeight: 'bold' },
-  sectionTitle: { fontSize: 18, color: '#FFFFFF', marginVertical: 15 },
-  row: { justifyContent: 'flex-start', gap: 8 },
-  serviceCard: { backgroundColor: '#13132A', borderRadius: 16, padding: 10, marginBottom: 15 },
-  serviceImage: { width: '100%', height: 120, borderRadius: 12 },
-  cardTitle: { color: '#FFFFFF', marginVertical: 8, textAlign: 'center' },
-  appelerBtn: { backgroundColor: '#7C3AED', borderRadius: 8, padding: 8, alignItems: 'center' },
-  appelerText: { color: '#FFFFFF', fontWeight: 'bold' },
-  personneCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#13132A', padding: 12, borderRadius: 16, marginBottom: 10 },
-  personnePhoto: { width: 50, height: 50, borderRadius: 25 },
-  personneName: { color: '#FFFFFF', fontWeight: 'bold' },
-  personneRole: { color: '#6B7A99' },
-  emptyText: { color: '#6B7A99', textAlign: 'center', marginVertical: 20 },
+  root: {
+    flex: 1,
+    backgroundColor: '#0F172A',
+  },
+  container: {
+    flex: 1,
+  },
+  contentContainer: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#0F172A',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 25,
+  },
+  greeting: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: 'white',
+  },
+  subtitle: {
+    color: '#94A3B8',
+    marginTop: 4,
+  },
+  logoutBtn: {
+    padding: 10,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    marginTop: 20,
+  },
+  sectionTitle: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  servicesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  serviceCard: {
+    backgroundColor: '#1E293B',
+    borderRadius: 18,
+    padding: 14,
+  },
+  serviceImage: {
+    width: '100%',
+    height: 120,
+    borderRadius: 14,
+    marginBottom: 12,
+  },
+  placeholderImage: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#334155',
+  },
+  cardTitle: {
+    color: 'white',
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  appelerBtn: {
+    backgroundColor: '#7C3AED',
+    padding: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  appelerText: {
+    color: 'white',
+    fontWeight: '600',
+  },
+
+  avatarContainer: {
+    marginRight: 14,
+  },
+
+  avatar: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+  },
+
+  avatarPlaceholder: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: '#334155',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  callButton: {
+    padding: 8,
+  },
+
+
+  personneCard: {
+    backgroundColor: '#1E293B',
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  personneInfo: {
+    flex: 1,
+  },
+  personneName: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  personneRole: {
+    color: '#94A3B8',
+  },
 });

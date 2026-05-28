@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tabs, usePathname, useRouter } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import BroadcastBanner from '../../components/BroadcastBanner';
 import { useUser } from '../../contexts/UserContext';
 import { useResponsive } from '../../hooks/useResponsive';
 
@@ -72,6 +73,7 @@ export default function TabsLayout() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0D0D1A' }}>
+      <BroadcastBanner />
       {isDesktop && <DesktopNavbar />}
       <Tabs
         screenOptions={{
@@ -126,6 +128,13 @@ export default function TabsLayout() {
           options={{
             title: 'Interphone',
             tabBarIcon: ({ color }) => <Ionicons name="call" color={color} size={22} />,
+          }}
+        />
+        <Tabs.Screen
+          name="contact-admin"
+          options={{
+            title: 'Support',
+            tabBarIcon: ({ color }) => <Ionicons name="headset" color={color} size={22} />,
           }}
         />
         <Tabs.Screen

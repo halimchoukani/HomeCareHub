@@ -59,7 +59,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login, user, token, loading: authLoading } = useUser();
+  const { login, user, token, loading: authLoading, deviceId } = useUser();
   const { isDesktop } = useResponsive();
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -108,9 +108,13 @@ export default function Login() {
 
   useEffect(() => {
     if (!authLoading && (user || token)) {
-      router.replace("/home");
+      if (deviceId) {
+        router.replace("/home");
+      } else {
+        router.replace("/join-device");
+      }
     }
-  }, [authLoading, router, token, user]);
+  }, [authLoading, router, token, user, deviceId]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -118,11 +122,20 @@ export default function Login() {
       return;
     }
     setLoading(true);
-    const token = await useLogin(email, password);
-    console.log("Token reçu :", token);
-    if (token) {
-      login(token);
-      router.push("/home");
+    const apiToken = await useLogin(email, password);
+    console.log("Token reçu :", apiToken);
+    if (apiToken) {
+      try {
+        const fetchedDeviceId = await login(apiToken);
+        if (fetchedDeviceId) {
+           router.replace("/home");
+        } else {
+           router.replace("/join-device");
+        }
+      } catch (err) {
+        Alert.alert("Erreur", "Impossible de récupérer les informations de l'utilisateur");
+        setLoading(false);
+      }
     } else {
       Alert.alert("Erreur", "Identifiants incorrects");
       setLoading(false);

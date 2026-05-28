@@ -11,7 +11,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { API_URL, api } from "../../constants/api";
@@ -20,21 +20,21 @@ import { useResponsive } from "../../hooks/useResponsive";
 
 interface Personne {
   id: number;
-  nom: string;
+  name: string;
+  lastName: string;
   role: string;
-  telephone: string;
-  photo: string;
-  statut: "autorise" | "bloque";
-  heure: string;
-  date: string;
+  phone: string;
+  facePhoto: string;
+  createdAt: string;
+  isActive: boolean;
 }
 
 export default function ControleAcces() {
   const router = useRouter();
-  const { token } = useUser();
+  const { token, deviceId } = useUser();
   const [persons, setPersons] = useState<Personne[]>([]);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("tous");
+  const [filter, setFilter] = useState(0);
   const [selected, setSelected] = useState<Personne | null>(null);
   const [loading, setLoading] = useState(true);
   const { isDesktop } = useResponsive();
@@ -55,7 +55,14 @@ export default function ControleAcces() {
     if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/personnes/`, { headers });
+      const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      };
+
+      const res = await fetch(`${API_URL}/api/devices/${deviceId}/persons/`, {
+        headers,
+      });
       const data = await res.json();
       setPersons(data);
     } catch {
@@ -67,21 +74,26 @@ export default function ControleAcces() {
 
   const filtered = persons.filter((p) => {
     const matchSearch =
-      p.nom.toLowerCase().includes(search.toLowerCase()) ||
+      (p.name + " " + p.lastName).toLowerCase().includes(search.toLowerCase()) ||
       p.role.toLowerCase().includes(search.toLowerCase());
-    const matchFilter = filter === "tous" ? true : p.statut === filter;
+    const matchFilter = filter === 0 ? true : p.isActive === true;
     return matchSearch && matchFilter;
   });
 
   const total = persons.length;
-  const autorise = persons.filter((p) => p.statut === "autorise").length;
-  const bloque = persons.filter((p) => p.statut === "bloque").length;
+  const autorise = persons.filter((p) => p.isActive === true).length;
+  const bloque = persons.filter((p) => p.isActive === false).length;
 
-  const toggleStatut = async (id: number, newStatut: Personne["statut"]) => {
+  const toggleStatut = async (id: number, newStatut: Personne["isActive"]) => {
     try {
-      const response = await api.patch(`/api/personnes/${id}/`, {
-        statut: newStatut,
-      });
+      const response = await api.patch(`/api/devices/${deviceId}/persons/${id}/${newStatut ? "unblock" : "block"}/`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       const updatedPerson: Personne = response.data;
 
       setPersons((prev) => prev.map((p) => (p.id === id ? updatedPerson : p)));
@@ -108,39 +120,39 @@ export default function ControleAcces() {
     <TouchableOpacity
       style={[
         styles.card,
-        item.statut === "bloque" && styles.cardBloque,
+        item.isActive === false && styles.cardBloque,
         isDesktop && { width: "24%" },
       ]}
       onPress={() => setSelected(item)}
       activeOpacity={0.85}
     >
-      <Image source={{ uri: item.photo }} style={styles.cardImage} />
+      <Image source={{ uri: item.facePhoto }} style={styles.cardImage} />
       <View
         style={[
           styles.statutDot,
-          item.statut === "autorise" ? styles.dotVert : styles.dotRouge,
+          item.isActive === true ? styles.dotVert : styles.dotRouge,
         ]}
       />
       <View style={styles.cardInfo}>
         <Text style={styles.cardName} numberOfLines={1}>
-          {item.nom}
+          {item.name + " " + item.lastName}
         </Text>
         <Text style={styles.cardRole}>{item.role}</Text>
         <Text style={styles.cardTime}>
-          {item.date} · {item.heure}
+          {item.createdAt}
         </Text>
         <View style={styles.cardBtns}>
           <TouchableOpacity
             style={[
               styles.cardBtn,
-              item.statut === "autorise" && styles.cardBtnActiveVert,
+              item.isActive === true && styles.cardBtnActiveVert,
             ]}
-            onPress={() => toggleStatut(item.id, "autorise")}
+            onPress={() => toggleStatut(item.id, true)}
           >
             <Text
               style={[
                 styles.cardBtnText,
-                item.statut === "autorise" && { color: "#4ADE80" },
+                item.isActive === true && { color: "#4ADE80" },
               ]}
             >
               ✓ Autorisé
@@ -149,14 +161,14 @@ export default function ControleAcces() {
           <TouchableOpacity
             style={[
               styles.cardBtn,
-              item.statut === "bloque" && styles.cardBtnActiveRouge,
+              item.isActive === false && styles.cardBtnActiveRouge,
             ]}
-            onPress={() => toggleStatut(item.id, "bloque")}
+            onPress={() => toggleStatut(item.id, false)}
           >
             <Text
               style={[
                 styles.cardBtnText,
-                item.statut === "bloque" && { color: "#F87171" },
+                item.isActive === false && { color: "#F87171" },
               ]}
             >
               ✗ Bloqué
@@ -198,12 +210,12 @@ export default function ControleAcces() {
       <View style={styles.statsRow}>
         <TouchableOpacity
           style={styles.statBox}
-          onPress={() => setFilter("tous")}
+          onPress={() => setFilter(0)}
         >
           <Text
             style={[
               styles.statValue,
-              filter === "tous" && { color: "#A78BFA" },
+              filter === 0 && { color: "#A78BFA" },
             ]}
           >
             {total}
@@ -213,7 +225,7 @@ export default function ControleAcces() {
         <View style={styles.statDivider} />
         <TouchableOpacity
           style={styles.statBox}
-          onPress={() => setFilter("autorise")}
+          onPress={() => setFilter(1)}
         >
           <Text style={[styles.statValue, { color: "#4ADE80" }]}>
             {autorise}
@@ -223,7 +235,7 @@ export default function ControleAcces() {
         <View style={styles.statDivider} />
         <TouchableOpacity
           style={styles.statBox}
-          onPress={() => setFilter("bloque")}
+          onPress={() => setFilter(2)}
         >
           <Text style={[styles.statValue, { color: "#F87171" }]}>{bloque}</Text>
           <Text style={styles.statLabel}>BLOQUÉS</Text>
@@ -263,7 +275,7 @@ export default function ControleAcces() {
       </View>
 
       <View style={styles.filtersRow}>
-        {["tous", "autorise", "bloque"].map((f) => (
+        {[0, 1, 2].map((f) => (
           <TouchableOpacity
             key={f}
             style={[styles.filterChip, filter === f && styles.filterChipActive]}
@@ -275,9 +287,9 @@ export default function ControleAcces() {
                 filter === f && styles.filterChipTextActive,
               ]}
             >
-              {f === "tous"
+              {f === 0
                 ? "Tous"
-                : f === "autorise"
+                : f === 1
                   ? "Autorisés"
                   : "Bloqués"}
             </Text>
@@ -330,15 +342,15 @@ export default function ControleAcces() {
               <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={styles.modalHeader}>
                   <Image
-                    source={{ uri: selected.photo }}
+                    source={{ uri: selected.facePhoto }}
                     style={styles.modalImage}
                   />
-                  <Text style={styles.modalName}>{selected.nom}</Text>
+                  <Text style={styles.modalName}>{selected.name + " " + selected.lastName}</Text>
                   <Text style={styles.modalRole}>{selected.role}</Text>
                   <View
                     style={[
                       styles.modalBadge,
-                      selected.statut === "autorise"
+                      selected.isActive === true
                         ? styles.badgeVert
                         : styles.badgeRouge,
                     ]}
@@ -348,13 +360,13 @@ export default function ControleAcces() {
                         styles.modalBadgeText,
                         {
                           color:
-                            selected.statut === "autorise"
+                            selected.isActive === true
                               ? "#4ADE80"
                               : "#F87171",
                         },
                       ]}
                     >
-                      {selected.statut === "autorise"
+                      {selected.isActive === true
                         ? "✓ Autorisé"
                         : "✗ Bloqué"}
                     </Text>
@@ -363,7 +375,7 @@ export default function ControleAcces() {
                 <View style={styles.modalInfoRow}>
                   <Text style={styles.modalInfoLabel}>Date détection</Text>
                   <Text style={styles.modalInfoValue}>
-                    {selected.date} à {selected.heure}
+                    {selected.createdAt}
                   </Text>
                 </View>
                 <View style={styles.modalInfoRow}>
@@ -375,16 +387,16 @@ export default function ControleAcces() {
                   <TouchableOpacity
                     style={[
                       styles.modalBtn,
-                      selected.statut === "autorise" &&
-                        styles.modalBtnActiveVert,
+                      selected.isActive === true &&
+                      styles.modalBtnActiveVert,
                     ]}
-                    onPress={() => toggleStatut(selected.id, "autorise")}
+                    onPress={() => toggleStatut(selected.id, true)}
                   >
                     <Text style={styles.modalBtnIcon}>✅</Text>
                     <Text
                       style={[
                         styles.modalBtnText,
-                        selected.statut === "autorise" && { color: "#4ADE80" },
+                        selected.isActive === true && { color: "#4ADE80" },
                       ]}
                     >
                       Autoriser
@@ -393,16 +405,16 @@ export default function ControleAcces() {
                   <TouchableOpacity
                     style={[
                       styles.modalBtn,
-                      selected.statut === "bloque" &&
-                        styles.modalBtnActiveRouge,
+                      selected.isActive === false &&
+                      styles.modalBtnActiveRouge,
                     ]}
-                    onPress={() => toggleStatut(selected.id, "bloque")}
+                    onPress={() => toggleStatut(selected.id, false)}
                   >
                     <Text style={styles.modalBtnIcon}>🚫</Text>
                     <Text
                       style={[
                         styles.modalBtnText,
-                        selected.statut === "bloque" && { color: "#F87171" },
+                        selected.isActive === false && { color: "#F87171" },
                       ]}
                     >
                       Bloquer
@@ -424,7 +436,7 @@ export default function ControleAcces() {
                 <TouchableOpacity
                   style={styles.modalDelete}
                   onPress={() => {
-                    Alert.alert("Confirmer", `Supprimer ${selected.nom} ?`, [
+                    Alert.alert("Confirmer", `Supprimer ${selected.name + " " + selected.lastName} ?`, [
                       { text: "Annuler", style: "cancel" },
                       {
                         text: "Supprimer",
