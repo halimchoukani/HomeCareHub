@@ -23,17 +23,14 @@ export const addPerson = async ({ deviceId, user, userEmail, role }: any) => {
         if (!isAssigned) {
             return { error: 'You do not have permission to perform this action', status: 403 };
         }
-        if (role === 'owner') {
-            return { error: 'Owner is already assigned', status: 400 };
-        }
         const isPersonExist = await prisma.person.findFirst({
             where: { deviceId: parseInt(deviceId as string, 10), userId: user },
         });
         if (isPersonExist) {
             return { error: 'Person is already added to this device', status: 400 };
         }
-        const personUser = await prisma.user.findUnique({
-            where: { email: userEmail, isAdmin: false },
+        const personUser = await prisma.user.findFirst({
+            where: { email: userEmail },
         });
         if (!personUser) {
             return { error: 'User not found', status: 404 };
@@ -88,6 +85,26 @@ export const assignDevice = async ({ deviceId, user }: { deviceId: number, user:
     }
 }
 
+export const unassignDevice = async ({ deviceId, user }: { deviceId: number, user: number }) => {
+    try {
+        const removePerson = await removePersonFromDevice({ deviceId, userId: user });
+        if (removePerson.error) {
+            return { error: removePerson.error, status: removePerson.status };
+        }
+        const device = await prisma.device.update({
+            where: { id: deviceId },
+            data: { userId: null },
+        });
+        if (!device) {
+            return { error: 'Device not found', status: 404 };
+        }
+
+        return { device, status: 200 };
+    } catch (error) {
+        console.error('unassignDeviceFromUser error:', error);
+        return { error: 'Failed to unassign device from user', status: 500 };
+    }
+}
 
 export const getRoleFromDevice = async ({ deviceId, userId }: { deviceId: number, userId: number }) => {
     try {

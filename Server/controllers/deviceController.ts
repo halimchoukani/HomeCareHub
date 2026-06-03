@@ -5,7 +5,7 @@ import { getUserIdFromToken } from '../middlewares/authMiddleware';
 import { getFaceEmbadding } from '../services/face';
 const { uploadImageToCloudinary } = require('./cloudinaryController');
 import mqtt from 'mqtt';
-import { addPerson, assignDevice, getRoleFromDevice, isAssignedToUser } from '../services/deviceService';
+import { addPerson, assignDevice, getRoleFromDevice, isAssignedToUser, removePersonFromDevice, unassignDevice } from '../services/deviceService';
 
 export const createDevice = async (req: Request, res: Response) => {
   try {
@@ -60,11 +60,11 @@ export const removePerson = async (req: Request, res: Response) => {
   try {
     const { deviceId, personId } = req.params;
     const userId = getUserIdFromToken(req.headers.authorization?.split(' ')[1] || '');
-    const isAssigned = await isAssignedToUser({ deviceId, userId });
+    const isAssigned = await isAssignedToUser({ deviceId: parseInt(deviceId as string, 10), userId });
     if (!isAssigned) {
-      return { error: 'You do not have permission to perform this action', status: 403 };
+      return res.status(403).json({ error: 'You do not have permission to perform this action' });
     }
-    const result: any = await removePersonFromDevice({ deviceId: parseInt(deviceId as string, 10), userId: parseInt(userId as string, 10) });
+    const result: any = await removePersonFromDevice({ deviceId: parseInt(deviceId as string, 10), userId });
     if (result.error) {
       return res.status(result.status).json({ error: result.error });
     }
@@ -153,15 +153,11 @@ export const unassignDeviceFromUser = async (req: Request, res: Response) => {
     if (!isAssigned) {
       return res.status(400).json({ error: 'Device is not assigned to this user' });
     }
-    const device = await prisma.device.update({
-      where: { id: parseInt(deviceId as string, 10) },
-      data: { userId: null },
-    });
-    if (!device) {
-      return res.status(404).json({ error: 'Device not found' });
+    const result = await unassignDevice({ deviceId: parseInt(deviceId as string, 10), user: userId });
+    if (result.error) {
+      return res.status(result.status).json({ error: result.error });
     }
-
-    res.status(200).json(device);
+    return res.status(result.status).json(result);
   } catch (error) {
     console.error('unassignDeviceFromUser error:', error);
     res.status(500).json({ error: 'Failed to unassign device from user' });
