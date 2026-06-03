@@ -38,7 +38,7 @@ interface Personne {
 
 export default function Home() {
   const router = useRouter();
-  const { user, token, logout, deviceId } = useUser();
+  const { user, token, logout, deviceId, setDeviceId } = useUser();
   const { columnCount } = useResponsive();
 
   const [services, setServices] = useState<Service[]>([]);
@@ -85,9 +85,9 @@ export default function Home() {
 
   const handleAppeler = async (telephone: string) => {
     try {
+
       const url = `tel:${telephone}`;
       const supported = await Linking.canOpenURL(url);
-
       if (supported) {
         await Linking.openURL(url);
       } else {
@@ -107,6 +107,11 @@ export default function Home() {
   const handleLogout = async () => {
     await logout();
     router.replace('/');
+  };
+
+  const handleExitDevice = () => {
+    setDeviceId(null);
+    router.replace('/join-device');
   };
 
   if (loading && !refreshing) {
@@ -153,16 +158,28 @@ export default function Home() {
             </Text>
           </View>
 
-          <TouchableOpacity
-            style={styles.logoutBtn}
-            onPress={handleLogout}
-          >
-            <Ionicons
-              name="log-out-outline"
-              size={24}
-              color="#EF4444"
-            />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <TouchableOpacity
+              style={styles.logoutBtn}
+              onPress={handleExitDevice}
+            >
+              <Ionicons
+                name="hardware-chip-outline"
+                size={24}
+                color="#7C3AED"
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.logoutBtn}
+              onPress={handleLogout}
+            >
+              <Ionicons
+                name="log-out-outline"
+                size={24}
+                color="#EF4444"
+              />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* PERSONNES */}
@@ -206,13 +223,9 @@ export default function Home() {
               </Text>
             </View>
 
-            {!!item.phone && (
+            {item.phone && item.username !== user?.username && (
               <TouchableOpacity
-                onPress={() =>
-                  handleAppeler(
-                    item.phone
-                  )
-                }
+                onPress={() => handleAppeler(item.phone)}
               >
                 <Ionicons
                   name="call"

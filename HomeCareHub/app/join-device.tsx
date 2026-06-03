@@ -30,7 +30,6 @@ export default function JoinDevice() {
     useEffect(() => {
         const fetchDevices = async () => {
             const data = await getDevices();
-            console.log("data: ", data);
             if (data) {
                 setDevices(data);
             }
@@ -60,7 +59,6 @@ export default function JoinDevice() {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            console.log("response", response);
             if (response.ok) {
                 Alert.alert("Succès", "Dispositif connecté avec succès.");
                 setDeviceId(deviceCode);

@@ -123,14 +123,13 @@ export default function Login() {
     }
     setLoading(true);
     const apiToken = await useLogin(email, password);
-    console.log("Token reçu :", apiToken);
     if (apiToken) {
       try {
         const fetchedDeviceId = await login(apiToken);
         if (fetchedDeviceId) {
-           router.replace("/home");
+          router.replace("/home");
         } else {
-           router.replace("/join-device");
+          router.replace("/join-device");
         }
       } catch (err) {
         Alert.alert("Erreur", "Impossible de récupérer les informations de l'utilisateur");

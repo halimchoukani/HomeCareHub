@@ -14,7 +14,6 @@ export default function BroadcastBanner() {
     if (!socket || !connected) return;
 
     const handleBroadcast = (data: { message: string; sender?: string }) => {
-      console.log('Received broadcast message:', data);
       setBroadcastMessage(data.message);
       Animated.timing(fadeAnim, {
         toValue: 1,

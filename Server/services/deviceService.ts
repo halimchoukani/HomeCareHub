@@ -9,7 +9,6 @@ export const isAssignedToUser = async ({ deviceId, userId }: { deviceId: number,
         if (!device) {
             return false;
         }
-        console.log("device", device, "user", userId);
         return device.userId === userId;
     } catch (error) {
         console.error('isAssignedToUser error:', error);

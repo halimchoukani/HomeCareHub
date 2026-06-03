@@ -19,8 +19,7 @@ export const getDevices = async () => {
 export const getPersonsByDevice = async (deviceId: number) => {
     try {
         const token = await getTokenFromStorage();
-        console.log("device ID: ", deviceId);
-        console.log("Token: ", token);
+
 
         const res = await api.get(`/devices/${deviceId}/persons/`, {
             headers: {
@@ -28,7 +27,6 @@ export const getPersonsByDevice = async (deviceId: number) => {
                 Authorization: `Bearer ${token}`,
             },
         });
-        console.log("Persons fetched successfully: ", res.data);
         return res.data;
     } catch (error: any) {
         console.error("Error while fetching persons: ", error.response?.data || error.message);

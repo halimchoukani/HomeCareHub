@@ -79,9 +79,21 @@ export default function AddPerson() {
           <TextInput style={styles.input} placeholder="Ex : exemple@gmail.com" placeholderTextColor="#6B7A99" value={email} onChangeText={setEmail} />
         </View>
         <Text style={styles.label}>RÔLE / DESCRIPTION</Text>
-        <View style={styles.inputWrapper}>
-          <Text style={styles.inputIcon}>🏷️</Text>
-          <TextInput style={styles.input} placeholder="Ex : Famille, Infirmier, Livreur..." placeholderTextColor="#6B7A99" value={role} onChangeText={setRole} />
+        <View style={styles.roleContainer}>
+          <TouchableOpacity
+            style={[styles.roleBtn, role === 'elder' && styles.roleBtnActive]}
+            onPress={() => setRole('elder')}
+          >
+            <Text style={styles.roleIcon}>👴</Text>
+            <Text style={[styles.roleText, role === 'elder' && styles.roleTextActive]}>Elder</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.roleBtn, role === 'healthcare' && styles.roleBtnActive]}
+            onPress={() => setRole('healthcare')}
+          >
+            <Text style={styles.roleIcon}>⚕️</Text>
+            <Text style={[styles.roleText, role === 'healthcare' && styles.roleTextActive]}>Healthcare</Text>
+          </TouchableOpacity>
         </View>
         <TouchableOpacity style={[styles.addBtn, loading && { opacity: 0.6 }]} onPress={handleAdd} disabled={loading}>
           {loading ? <ActivityIndicator color="#fff" /> : <><Text style={styles.addBtnIcon}>💾</Text><Text style={styles.addBtnText}>Ajouter</Text></>}
@@ -118,6 +130,12 @@ const styles = StyleSheet.create({
   inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1A1A2E', borderWidth: 1, borderColor: '#2E2B52', borderRadius: 12, paddingHorizontal: 14, marginBottom: 20 },
   inputIcon: { fontSize: 16, marginRight: 10 },
   input: { flex: 1, paddingVertical: 14, fontSize: 15, color: '#FFFFFF' },
+  roleContainer: { flexDirection: 'row', gap: 12, marginBottom: 20 },
+  roleBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#1A1A2E', borderWidth: 1, borderColor: '#2E2B52', borderRadius: 12, paddingVertical: 14 },
+  roleBtnActive: { borderColor: '#7C3AED', backgroundColor: 'rgba(124, 58, 237, 0.1)' },
+  roleIcon: { fontSize: 18 },
+  roleText: { color: '#8A8FAB', fontSize: 15, fontWeight: '600' },
+  roleTextActive: { color: '#FFFFFF' },
   addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#7C3AED', paddingVertical: 16, borderRadius: 14, marginTop: 8 },
   addBtnIcon: { fontSize: 18 },
   addBtnText: { color: '#FFFFFF', fontSize: 17, fontWeight: 'bold' },
