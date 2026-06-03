@@ -5,24 +5,29 @@ const JWT_SECRET = process.env.JWT_SECRET || 'hguipzhgbzioegbzibnljcnzeufbhzibsk
 const bcrypt = require("bcrypt");
 const { uploadImageToCloudinary } = require("../controllers/cloudinaryController");
 
-export const signupService = async ({ username, email, password, phone, isAdmin, file }: { username: string, email: string, password: string, phone: string, isAdmin: boolean, file: Express.Multer.File | null }) => {
+export const signupService = async ({ username, email, password, phone, isAdmin, file }: { username: string, email: string, password: string, phone: string, isAdmin: string, file: Express.Multer.File | null }) => {
     try {
         if (!username || !email || !password) {
             return { error: 'Username, email, and password are required', status: 400 };
         }
-        if (!file) {
+
+        let isAdminValue = isAdmin === "true" ? true : false;
+        if (!file && !isAdminValue) {
             return { error: 'Face Photo is required', status: 400 };
         }
-        let isAdminValue = Boolean(isAdmin) || false;
-        const facePhotoUrl = await uploadImageToCloudinary(username, file) as string;
-        const result: any = await getFaceEmbadding(file);
-        // Serialize the float array to a JSON string for storage (faceEmbedding is String? in schema)
-        const face_embedding: string | null = Array.isArray(result?.embedding)
-            ? JSON.stringify(result.embedding)
-            : null;
+        let facePhotoUrl: string = "";
+        let face_embedding: string | null = null;
+        if (file) {
+            facePhotoUrl = await uploadImageToCloudinary(username, file) as string;
+            const result: any = await getFaceEmbadding(file);
+            // Serialize the float array to a JSON string for storage (faceEmbedding is String? in schema)
+            face_embedding = Array.isArray(result?.embedding)
+                ? JSON.stringify(result.embedding)
+                : null;
 
-        if (!face_embedding) {
-            return { error: 'Failed to get face embedding, please provide a valid face image', status: 500 };
+            if (!face_embedding) {
+                return { error: 'Failed to get face embedding, please provide a valid face image', status: 500 };
+            }
         }
 
         const existingUser = await prisma.user.findFirst({

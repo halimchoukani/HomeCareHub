@@ -23,19 +23,19 @@ export const addPerson = async ({ deviceId, user, userEmail, role }: any) => {
         if (!isAssigned) {
             return { error: 'You do not have permission to perform this action', status: 403 };
         }
-        const isPersonExist = await prisma.person.findFirst({
-            where: { deviceId: parseInt(deviceId as string, 10), userId: user },
-        });
-        if (isPersonExist) {
-            return { error: 'Person is already added to this device', status: 400 };
-        }
+
         const personUser = await prisma.user.findFirst({
             where: { email: userEmail },
         });
         if (!personUser) {
             return { error: 'User not found', status: 404 };
         }
-
+        const isPersonExist = await prisma.person.findFirst({
+            where: { deviceId: parseInt(deviceId as string, 10), userId: personUser.id },
+        });
+        if (isPersonExist) {
+            return { error: 'Person is already added to this device', status: 400 };
+        }
         const person = await prisma.person.create({
             data: {
                 userId: personUser.id,
@@ -141,3 +141,52 @@ export const removePersonFromDevice = async ({ deviceId, userId }: { deviceId: n
         return { error: 'Failed to remove person', status: 500 };
     }
 }
+
+
+
+export const getPersonsByDeviceId = async ({ deviceId }: { deviceId: number }) => {
+    try {
+        const persons = await prisma.person.findMany({
+            where: { deviceId: deviceId },
+            omit: { faceEmbedding: true },
+        });
+        if (!persons) {
+            return { error: 'No persons found for this device', status: 404 };
+        }
+        let users = [];
+        for (let i = 0; i < persons.length; i++) {
+            const user = await prisma.user.findUnique({
+                where: { id: persons[i].userId },
+                omit: { password: true, faceEmbedding: true },
+            });
+            if (user) {
+                users.push({
+                    ...user,
+                    ...persons[i],
+                });
+            }
+        }
+        return { persons: users, status: 200 };
+    } catch (error) {
+        console.error('getPersonsByDevice error:', error);
+        return { error: 'Failed to get persons for this device', status: 500 };
+    }
+}
+
+export const getUserDevices = async ({ userId }: { userId: number }) => {
+    try {
+        const devices = await prisma.device.findMany({
+            where: { userId: userId },
+        });
+        if (!devices) {
+            return { error: 'No devices found for this user', status: 404 };
+        }
+        return { devices, status: 200 };
+    } catch (error) {
+        console.error('getUserDevices error:', error);
+        return { error: 'Failed to get devices for this user', status: 500 };
+    }
+}
+
+
+

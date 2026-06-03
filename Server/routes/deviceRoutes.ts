@@ -9,7 +9,7 @@ import {
   blockPerson,
   unblockPerson,
   sendSensorData,
-  getUserDevices,
+  getDevicesByUserId,
   getRole
 } from '../controllers/deviceController';
 import { authenticate, authorizeAdmin } from '../middlewares/authMiddleware';
@@ -20,7 +20,7 @@ const router = Router();
 
 // Admin only endpoints
 router.post('/', authorizeAdmin, createDevice);
-router.get('/userDevices', authenticate, getUserDevices);
+router.get('/userDevices', authenticate, getDevicesByUserId);
 router.get('/:deviceId/role', authenticate, getRole);
 // Endpoints for authenticated users
 router.post('/:deviceId/assign', authenticate, assignDeviceToUser);

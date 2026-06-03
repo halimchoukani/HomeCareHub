@@ -5,7 +5,7 @@ import { getUserIdFromToken } from '../middlewares/authMiddleware';
 import { getFaceEmbadding } from '../services/face';
 const { uploadImageToCloudinary } = require('./cloudinaryController');
 import mqtt from 'mqtt';
-import { addPerson, assignDevice, getRoleFromDevice, isAssignedToUser, removePersonFromDevice, unassignDevice } from '../services/deviceService';
+import { addPerson, assignDevice, getPersonsByDeviceId, getRoleFromDevice, getUserDevices, isAssignedToUser, removePersonFromDevice, unassignDevice } from '../services/deviceService';
 
 export const createDevice = async (req: Request, res: Response) => {
   try {
@@ -45,11 +45,11 @@ export const getPersonsByDevice = async (req: Request, res: Response) => {
     if (!isAssigned) {
       return res.status(403).json({ error: 'You do not have permission to perform this action' });
     }
-    const persons = await prisma.person.findMany({
-      where: { deviceId: parseInt(deviceId as string, 10) },
-      omit: { faceEmbedding: true },
-    });
-    res.status(200).json(persons);
+    const result = await getPersonsByDeviceId({ deviceId: parseInt(deviceId as string, 10) });
+    if (result.error) {
+      return res.status(result.status).json({ error: result.error });
+    }
+    return res.status(result.status).json(result.persons);
   } catch (error) {
     console.error('getPersonsByDevice error:', error);
     res.status(500).json({ error: 'Failed to get persons by device' });
@@ -77,8 +77,8 @@ export const removePerson = async (req: Request, res: Response) => {
 
 // ── shared helper ─────────────────────────────────────────────────────────────
 const resolvePersonOnDevice = async (deviceId: number, personId: number) => {
-  const person = await prisma.person.findUnique({ where: { id: personId } });
-  if (!person || person.deviceId !== deviceId) return null;
+  const person = await prisma.person.findUnique({ where: { id: personId, deviceId: deviceId } });
+  if (!person) return null;
   return person;
 };
 
@@ -226,17 +226,14 @@ export const sendSensorData = async (req: Request, res: Response) => {
 };
 
 
-export const getUserDevices = async (req: Request, res: Response) => {
+export const getDevicesByUserId = async (req: Request, res: Response) => {
   try {
     const userId = getUserIdFromToken(req.headers.authorization?.split(' ')[1] || '');
-    const devices = await prisma.device.findMany({
-      where: { userId },
-      select: { id: true },
-    });
-    if (!devices) {
-      return res.status(404).json({ error: 'Devices not found' });
+    const result = await getUserDevices({ userId });
+    if (result.error) {
+      return res.status(result.status).json({ error: result.error });
     }
-    res.status(200).json(devices.map((device) => device.id));
+    return res.status(result.status).json(result.devices);
   } catch (error) {
     console.error('getUserDevices error:', error);
     res.status(500).json({ error: 'Failed to get user devices' });

@@ -75,6 +75,24 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
+export const toggleAdmin = async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  try {
+    const user = await prisma.user.findUnique({ where: { id: Number(id) } });
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+    await prisma.user.update({
+      where: { id: Number(id) },
+      data: { isAdmin: !user.isAdmin },
+    });
+    res.json({ message: 'User updated successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+}
+
 export const getAllDevices = async (req: Request, res: Response): Promise<void> => {
   try {
     const devices = await prisma.device.findMany({
@@ -106,7 +124,7 @@ export const deleteDevice = async (req: Request, res: Response): Promise<void> =
 
 export const sendMessageToUser = async (req: Request, res: Response): Promise<any> => {
   const { userId, message } = req.body;
-  
+
   if (!message) {
     return res.status(400).json({ error: 'Message is required' });
   }

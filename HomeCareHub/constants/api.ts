@@ -1,11 +1,22 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-export const API_URL = "http://192.168.1.3:3000";
+export const API_URL = "http://10.0.2.2:3000/api";
 
 export const api = axios.create({
   baseURL: API_URL,
   headers: { "Content-Type": "application/json" },
 });
+
+export const getTokenFromStorage = async () => {
+  const tokenData = await AsyncStorage.getItem("token");
+  if (!tokenData) return null;
+  try {
+    return JSON.parse(tokenData);
+  } catch {
+    return tokenData;
+  }
+}
 
 export const setAuthToken = (token: string | null | undefined) => {
   if (token) {
@@ -17,7 +28,7 @@ export const setAuthToken = (token: string | null | undefined) => {
 
 export const useLogin = async (email: string, password: string) => {
   try {
-    const response = await api.post("/api/auth/login/", {
+    const response = await api.post("/auth/login/", {
       email: email,
       password,
     });
@@ -29,21 +40,19 @@ export const useLogin = async (email: string, password: string) => {
 };
 
 export const useSignup = async (
-  name: string,
-  email: string,
-  password: string,
+  formData: FormData,
 ) => {
   try {
-    const response = await api.post("/api/auth/signup/", {
-      username: email,
-      email,
-      password,
-      name,
+    const response = await api.post("/auth/signup/", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      data: formData,
     });
     return response.data;
   } catch (err: any) {
     console.warn("Signup error", err.response?.data || err.message || err);
-    return null;
+    return err;
   }
 };
 

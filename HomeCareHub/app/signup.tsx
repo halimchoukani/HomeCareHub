@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -12,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import * as ImagePicker from 'expo-image-picker';
 import { useSignup } from "../constants/api";
 import { useUser } from "../contexts/UserContext";
 import { useResponsive } from "../hooks/useResponsive";
@@ -19,7 +21,9 @@ import { useResponsive } from "../hooks/useResponsive";
 export default function Signup() {
   const router = useRouter();
   const { user, token, loading: authLoading } = useUser();
+  const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -32,8 +36,44 @@ export default function Signup() {
     }
   }, [authLoading, router, token, user]);
 
+  const handleGallery = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission refusée', 'Autorisez l\'accès à la galerie');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (!result.canceled) {
+      setPhoto(result.assets[0]);
+    }
+  };
+
+  const handleCamera = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission refusée', 'Autorisez l\'accès à la caméra');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (!result.canceled) {
+      setPhoto(result.assets[0]);
+    }
+  };
   const handleSignup = async () => {
-    if (!name || !email || !password || !confirm) {
+    if (!photo) {
+      Alert.alert("Photo manquante", "Veuillez sélectionner une photo.");
+      return;
+    }
+    if (!name || !email || !password || !confirm || !phone) {
       Alert.alert("Champs manquants", "Veuillez remplir tous les champs.");
       return;
     }
@@ -43,12 +83,22 @@ export default function Signup() {
     }
     setLoading(true);
     try {
-      const response = await useSignup(name, email, password);
+      const formData = new FormData();
+      formData.append('facePhoto', {
+        uri: photo.uri,
+        name: 'photo.jpg',
+        type: 'image/jpeg',
+      } as any);
+      formData.append("username", name);
+      formData.append("email", email);
+      formData.append("password", password);
+      formData.append("phone", phone);
+      const response = await useSignup(formData);
       if (response) {
         Alert.alert("Succès", "Compte créé avec succès ! Connectez-vous.");
         router.push("/login");
       } else {
-        Alert.alert("Erreur", "Une erreur est survenue");
+        Alert.alert("Erreur", "Visage non détecté ou information manquante.");
       }
     } catch (err: any) {
       Alert.alert(
@@ -84,8 +134,32 @@ export default function Signup() {
         >
           <Text style={styles.title}>Créer un compte</Text>
 
+          <View style={styles.photoSection}>
+            <View style={styles.photoPreview}>
+              {photo ? (
+                <Image source={{ uri: photo.uri }} style={styles.photoImage} />
+              ) : (
+                <View style={styles.photoPlaceholder}>
+                  <Text style={styles.photoPlaceholderIcon}>👤</Text>
+                </View>
+              )}
+              <TouchableOpacity style={styles.cameraBadge} onPress={handleCamera}>
+                <Text style={styles.cameraBadgeText}>📷</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.photoButtons}>
+              <TouchableOpacity style={styles.photoBtn} onPress={handleGallery}>
+                <Text style={styles.photoBtnIcon}>🖼️</Text>
+                <Text style={styles.photoBtnText}>Galerie</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.photoBtn, styles.photoBtnCam]} onPress={handleCamera}>
+                <Text style={styles.photoBtnIcon}>📷</Text>
+                <Text style={[styles.photoBtnText, { color: '#A78BFA' }]}>Caméra</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Nom complet</Text>
+            <Text style={styles.label}>Username</Text>
             <TextInput
               style={styles.input}
               placeholder="Ex: Jean Dupont"
@@ -94,6 +168,18 @@ export default function Signup() {
               onChangeText={setName}
             />
           </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Phone</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ex: 12345678"
+              placeholderTextColor="#4A4E6A"
+              value={phone}
+              onChangeText={setPhone}
+            />
+          </View>
+
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email</Text>
             <TextInput
@@ -186,6 +272,20 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     textAlign: "center",
   },
+
+  photoSection: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 28 },
+  photoPreview: { position: 'relative', width: 80, height: 80 },
+  photoImage: { width: 80, height: 80, borderRadius: 14, borderWidth: 2, borderColor: '#7C3AED' },
+  photoPlaceholder: { width: 80, height: 80, borderRadius: 14, backgroundColor: '#1A1A2E', borderWidth: 1.5, borderColor: '#2E2B52', alignItems: 'center', justifyContent: 'center' },
+  photoPlaceholderIcon: { fontSize: 32, opacity: 0.4 },
+  cameraBadge: { position: 'absolute', bottom: -6, right: -6, width: 28, height: 28, borderRadius: 14, backgroundColor: '#7C3AED', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#0D0D1A' },
+  cameraBadgeText: { fontSize: 13 },
+  photoButtons: { flex: 1, gap: 10 },
+  photoBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#1A1A2E', borderWidth: 1, borderColor: '#2E2B52', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16 },
+  photoBtnCam: { borderColor: '#7C3AED', backgroundColor: '#1E1040' },
+  photoBtnIcon: { fontSize: 18 },
+  photoBtnText: { color: '#B0B8D4', fontSize: 15, fontWeight: '600' },
+
   inputGroup: { marginBottom: 16 },
   label: { fontSize: 13, color: "#A0A8C8", marginBottom: 8 },
   input: {

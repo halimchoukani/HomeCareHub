@@ -41,7 +41,7 @@ export const getCurrentUser = async () => {
   try {
     const tokenData = await storage.getItem("token");
     const token = JSON.parse(tokenData as string) as string;
-    const resourceResponse = await api.get("/api/auth/me/", {
+    const resourceResponse = await api.get("/auth/me/", {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
@@ -94,10 +94,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           storage.getItem("token"),
         ]);
         const data = await getCurrentUser();
-        console.log("data : ", data);
         if (userData) {
-
-
           setUser(data);
         };
         if (tokenData) {
@@ -133,7 +130,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     const jwt = (userData.token || userData.access) as string;
     setAuthToken(jwt);
     try {
-      const resourceResponse = await api.get("/api/auth/me/");
+      const resourceResponse = await api.get("/auth/me/");
       const resourceData: User = resourceResponse.data;
       setUser(resourceData);
       setToken(jwt);

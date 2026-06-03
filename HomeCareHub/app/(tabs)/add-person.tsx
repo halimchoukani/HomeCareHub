@@ -13,86 +13,42 @@ export default function AddPerson() {
   const router = useRouter();
   const { token, user, deviceId } = useUser();
 
-  const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
-  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [role, setRole] = useState('');
-  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const { isDesktop } = useResponsive();
 
-  const handleGallery = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permission refusée', 'Autorisez l\'accès à la galerie');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
-    if (!result.canceled) {
-      setPhoto(result.assets[0]);
-    }
-  };
-
-  const handleCamera = async () => {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permission refusée', 'Autorisez l\'accès à la caméra');
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
-    if (!result.canceled) {
-      setPhoto(result.assets[0]);
-    }
-  };
 
   const handleAdd = async () => {
-    if (!name.trim()) {
-      Alert.alert('Erreur', 'Veuillez saisir un nom complet');
+    if (!email.trim()) {
+      Alert.alert('Erreur', 'Veuillez saisir un email complet');
       return;
     }
-    if (!phone.trim()) {
-      Alert.alert('Erreur', 'Veuillez saisir un numéro de téléphone');
-      return;
-    }
-    if (!photo) {
-      Alert.alert('Erreur', 'Veuillez ajouter une photo');
+    if (!role.trim()) {
+      Alert.alert('Erreur', 'Veuillez saisir un rôle');
       return;
     }
     setLoading(true);
     try {
-      const formData = new FormData();
-      formData.append('name', name.trim());
-      formData.append('lastName', name.trim());
-      formData.append('role', role.trim());
-      formData.append('phone', phone.trim());
-      formData.append('facePhoto', {
-        uri: photo.uri,
-        name: 'photo.jpg',
-        type: 'image/jpeg',
-      } as any);
 
-      const response = await fetch(`${API_URL}/api/devices/${deviceId}/persons/`, {
+      const response = await fetch(`${API_URL}/devices/${deviceId}/persons/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-        body: formData,
+        body: JSON.stringify({
+          userEmail: email,
+          role: role,
+        }),
       });
       const data = await response.json();
       if (response.ok) {
-        Alert.alert('Succès', `${name} a été ajouté(e) !`, [
+        Alert.alert('Succès', `${email} a été ajouté(e) !`, [
           { text: 'OK', onPress: () => router.replace('/home') },
         ]);
       } else {
-        Alert.alert('Erreur', JSON.stringify(data));
+        Alert.alert('Erreur', data.error);
       }
     } catch {
       Alert.alert('Erreur', 'Impossible de contacter le serveur');
@@ -117,47 +73,16 @@ export default function AddPerson() {
         </View>
       </View>
       <ScrollView contentContainerStyle={[styles.scrollContent, isDesktop && { maxWidth: 600, alignSelf: 'center', width: '100%' }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <View style={styles.photoSection}>
-          <View style={styles.photoPreview}>
-            {photo ? (
-              <Image source={{ uri: photo.uri }} style={styles.photoImage} />
-            ) : (
-              <View style={styles.photoPlaceholder}>
-                <Text style={styles.photoPlaceholderIcon}>👤</Text>
-              </View>
-            )}
-            <TouchableOpacity style={styles.cameraBadge} onPress={handleCamera}>
-              <Text style={styles.cameraBadgeText}>📷</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.photoButtons}>
-            <TouchableOpacity style={styles.photoBtn} onPress={handleGallery}>
-              <Text style={styles.photoBtnIcon}>🖼️</Text>
-              <Text style={styles.photoBtnText}>Galerie</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.photoBtn, styles.photoBtnCam]} onPress={handleCamera}>
-              <Text style={styles.photoBtnIcon}>📷</Text>
-              <Text style={[styles.photoBtnText, { color: '#A78BFA' }]}>Caméra</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <Text style={styles.label}>NOM COMPLET</Text>
+        <Text style={styles.label}>Email</Text>
         <View style={styles.inputWrapper}>
           <Text style={styles.inputIcon}>👤</Text>
-          <TextInput style={styles.input} placeholder="Ex : Jean Dupont" placeholderTextColor="#6B7A99" value={name} onChangeText={setName} />
+          <TextInput style={styles.input} placeholder="Ex : exemple@gmail.com" placeholderTextColor="#6B7A99" value={email} onChangeText={setEmail} />
         </View>
         <Text style={styles.label}>RÔLE / DESCRIPTION</Text>
         <View style={styles.inputWrapper}>
           <Text style={styles.inputIcon}>🏷️</Text>
           <TextInput style={styles.input} placeholder="Ex : Famille, Infirmier, Livreur..." placeholderTextColor="#6B7A99" value={role} onChangeText={setRole} />
         </View>
-        <Text style={styles.label}>NUMÉRO DE TÉLÉPHONE</Text>
-        <View style={styles.inputWrapper}>
-          <Text style={styles.inputIcon}>📞</Text>
-          <TextInput style={styles.input} placeholder="Ex : +216 97 582 131" placeholderTextColor="#6B7A99" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-        </View>
-
         <TouchableOpacity style={[styles.addBtn, loading && { opacity: 0.6 }]} onPress={handleAdd} disabled={loading}>
           {loading ? <ActivityIndicator color="#fff" /> : <><Text style={styles.addBtnIcon}>💾</Text><Text style={styles.addBtnText}>Ajouter</Text></>}
         </TouchableOpacity>

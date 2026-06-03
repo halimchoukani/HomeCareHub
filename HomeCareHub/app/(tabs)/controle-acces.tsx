@@ -17,13 +17,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { API_URL, api } from "../../constants/api";
 import { useUser } from "../../contexts/UserContext";
 import { useResponsive } from "../../hooks/useResponsive";
+import { getPersonsByDevice, toggleBlockStatus } from "@/hooks/useDevice";
 
 interface Personne {
   id: number;
-  name: string;
-  lastName: string;
+  username: string;
+  email: string;
   role: string;
-  phone: string;
   facePhoto: string;
   createdAt: string;
   isActive: boolean;
@@ -52,52 +52,46 @@ export default function ControleAcces() {
   );
 
   const fetchPersons = async () => {
-    if (!token) return;
+    if (!token || !deviceId) return;
     setLoading(true);
-    try {
-      const headers = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      };
 
-      const res = await fetch(`${API_URL}/api/devices/${deviceId}/persons/`, {
-        headers,
-      });
-      const data = await res.json();
-      setPersons(data);
-    } catch {
-      Alert.alert("Erreur", "Impossible de charger les personnes");
+    try {
+      const personnesRes = await getPersonsByDevice(parseInt(deviceId!));
+      if (!personnesRes) {
+        throw new Error('Failed loading persons');
+      }
+      setPersons(personnesRes);
+    } catch (error) {
+      console.error(error);
+      Alert.alert(
+        'Erreur',
+        'Impossible de charger les données'
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const filtered = persons.filter((p) => {
+
     const matchSearch =
-      (p.name + " " + p.lastName).toLowerCase().includes(search.toLowerCase()) ||
+      (p.username + " " + p.email).toLowerCase().includes(search.toLowerCase()) ||
       p.role.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === 0 ? true : p.isActive === true;
     return matchSearch && matchFilter;
   });
-
   const total = persons.length;
   const autorise = persons.filter((p) => p.isActive === true).length;
   const bloque = persons.filter((p) => p.isActive === false).length;
 
   const toggleStatut = async (id: number, newStatut: Personne["isActive"]) => {
     try {
-      const response = await api.patch(`/api/devices/${deviceId}/persons/${id}/${newStatut ? "unblock" : "block"}/`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      const updatedPerson: Personne = response.data;
-
-      setPersons((prev) => prev.map((p) => (p.id === id ? updatedPerson : p)));
-      setSelected((prev) => (prev && prev.id === id ? updatedPerson : prev));
+      const response = await toggleBlockStatus(parseInt(deviceId!), id, newStatut ? "unblock" : "block");
+      if (!response) {
+        throw new Error("Error while updating person status");
+      }
+      setPersons((prev) => prev.map((p) => (p.id === id ? { ...p, isActive: newStatut } : p)));
+      setSelected((prev) => (prev && prev.id === id ? { ...prev, isActive: newStatut } : prev));
     } catch {
       Alert.alert("Erreur", "Impossible de mettre à jour le statut");
     }
@@ -135,46 +129,48 @@ export default function ControleAcces() {
       />
       <View style={styles.cardInfo}>
         <Text style={styles.cardName} numberOfLines={1}>
-          {item.name + " " + item.lastName}
+          {item.username}
         </Text>
         <Text style={styles.cardRole}>{item.role}</Text>
         <Text style={styles.cardTime}>
           {item.createdAt}
         </Text>
-        <View style={styles.cardBtns}>
-          <TouchableOpacity
-            style={[
-              styles.cardBtn,
-              item.isActive === true && styles.cardBtnActiveVert,
-            ]}
-            onPress={() => toggleStatut(item.id, true)}
-          >
-            <Text
+        {item.role !== "owner" && (
+          <View style={styles.cardBtns}>
+
+            <TouchableOpacity
               style={[
-                styles.cardBtnText,
-                item.isActive === true && { color: "#4ADE80" },
+                styles.cardBtn,
+                item.isActive === true && styles.cardBtnActiveVert,
               ]}
+              onPress={() => toggleStatut(item.id, true)}
             >
-              ✓ Autorisé
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.cardBtn,
-              item.isActive === false && styles.cardBtnActiveRouge,
-            ]}
-            onPress={() => toggleStatut(item.id, false)}
-          >
-            <Text
+              <Text
+                style={[
+                  styles.cardBtnText,
+                  item.isActive === true && { color: "#4ADE80" },
+                ]}
+              >
+                ✓ Autorisé
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
               style={[
-                styles.cardBtnText,
-                item.isActive === false && { color: "#F87171" },
+                styles.cardBtn,
+                item.isActive === false && styles.cardBtnActiveRouge,
               ]}
+              onPress={() => toggleStatut(item.id, false)}
             >
-              ✗ Bloqué
-            </Text>
-          </TouchableOpacity>
-        </View>
+              <Text
+                style={[
+                  styles.cardBtnText,
+                  item.isActive === false && { color: "#F87171" },
+                ]}
+              >
+                ✗ Bloqué
+              </Text>
+            </TouchableOpacity>
+          </View>)}
       </View>
     </TouchableOpacity>
   );
@@ -345,7 +341,7 @@ export default function ControleAcces() {
                     source={{ uri: selected.facePhoto }}
                     style={styles.modalImage}
                   />
-                  <Text style={styles.modalName}>{selected.name + " " + selected.lastName}</Text>
+                  <Text style={styles.modalName}>{selected.username}</Text>
                   <Text style={styles.modalRole}>{selected.role}</Text>
                   <View
                     style={[
@@ -436,7 +432,7 @@ export default function ControleAcces() {
                 <TouchableOpacity
                   style={styles.modalDelete}
                   onPress={() => {
-                    Alert.alert("Confirmer", `Supprimer ${selected.name + " " + selected.lastName} ?`, [
+                    Alert.alert("Confirmer", `Supprimer ${selected.username} ?`, [
                       { text: "Annuler", style: "cancel" },
                       {
                         text: "Supprimer",

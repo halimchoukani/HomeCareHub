@@ -1,5 +1,6 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
@@ -12,17 +13,39 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { API_URL } from "../constants/api";
 import { useUser } from "../contexts/UserContext";
+import { getDevices } from "../hooks/useDevice";
 import { useResponsive } from "../hooks/useResponsive";
 
 export default function JoinDevice() {
     const router = useRouter();
     const [deviceCode, setDeviceCode] = useState("");
     const [loading, setLoading] = useState(false);
-    const { token, user, setDeviceId } = useUser();
+    const [devices, setDevices] = useState<any[]>([]);
+    const { token, user, setDeviceId, logout } = useUser();
     const { isDesktop } = useResponsive();
 
+    useEffect(() => {
+        const fetchDevices = async () => {
+            const data = await getDevices();
+            console.log("data: ", data);
+            if (data) {
+                setDevices(data);
+            }
+        };
+        fetchDevices();
+    }, []);
+
+    const handleLogout = async () => {
+        await logout();
+        router.replace("/");
+    };
+    const handleSelectDevice = async (deviceId: string) => {
+        setDeviceId(deviceId);
+        router.replace("/home");
+    }
     const handleJoin = async () => {
         if (!deviceCode.trim()) {
             Alert.alert("Champs manquants", "Veuillez entrer l'ID du dispositif.");
@@ -30,14 +53,14 @@ export default function JoinDevice() {
         }
         setLoading(true);
         try {
-            const response = await fetch(`${API_URL}/api/devices/${deviceCode}/assign`, {
+            const response = await fetch(`${API_URL}/devices/${deviceCode}/assign`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
             });
-
+            console.log("response", response);
             if (response.ok) {
                 Alert.alert("Succès", "Dispositif connecté avec succès.");
                 setDeviceId(deviceCode);
@@ -54,61 +77,109 @@ export default function JoinDevice() {
     };
 
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={styles.container}
-        >
-            <ScrollView
-                contentContainerStyle={styles.scrollContainer}
-                keyboardShouldPersistTaps="handled"
+        <SafeAreaView style={{ flex: 1, backgroundColor: "#0D0D1A" }}>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                style={styles.container}
             >
-                <View style={styles.logoWrapper}>
-                    <View style={styles.logoCircle}>
-                        <Text style={styles.logoEmoji}>🔗</Text>
-                    </View>
-                    <Text style={styles.appName}>HomeCareHub</Text>
-                </View>
-
-                <View
-                    style={[
-                        styles.card,
-                        isDesktop && { maxWidth: 450, alignSelf: "center", width: "100%" },
-                    ]}
+                <TouchableOpacity
+                    style={styles.logoutBtn}
+                    onPress={handleLogout}
                 >
-                    <Text style={styles.title}>Connecter un dispositif</Text>
-                    <Text style={styles.subtitle}>Veuillez entrer l'ID du dispositif pour continuer</Text>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>ID du dispositif</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Ex: DEV-12345"
-                            placeholderTextColor="#4A4E6A"
-                            autoCapitalize="none"
-                            value={deviceCode}
-                            onChangeText={setDeviceCode}
-                        />
+                    <Ionicons
+                        name="log-out-outline"
+                        size={28}
+                        color="#EF4444"
+                    />
+                </TouchableOpacity>
+                <ScrollView
+                    contentContainerStyle={styles.scrollContainer}
+                    keyboardShouldPersistTaps="handled"
+                >
+                    <View style={styles.logoWrapper}>
+                        <View style={styles.logoCircle}>
+                            <Text style={styles.logoEmoji}>🔗</Text>
+                        </View>
+                        <Text style={styles.appName}>HomeCareHub</Text>
                     </View>
 
-                    <TouchableOpacity
-                        style={[styles.button, loading && styles.buttonDisabled]}
-                        onPress={handleJoin}
-                        disabled={loading}
+                    <View
+                        style={[
+                            styles.card,
+                            isDesktop && { maxWidth: 450, alignSelf: "center", width: "100%" },
+                        ]}
                     >
-                        {loading ? (
-                            <ActivityIndicator color="#fff" />
-                        ) : (
-                            <Text style={styles.buttonText}>Connecter</Text>
+                        <Text style={styles.title}>Connecter un dispositif</Text>
+                        <Text style={styles.subtitle}>Veuillez sélectionner ou entrer l'ID du dispositif</Text>
+
+                        {devices.length > 0 && (
+                            <View style={styles.deviceList}>
+                                <Text style={styles.label}>Vos dispositifs ({devices.length})</Text>
+                                <ScrollView style={styles.devicesScroll} nestedScrollEnabled={true}>
+                                    {devices.map((device) => (
+                                        <TouchableOpacity
+                                            key={device.id}
+                                            style={[
+                                                styles.deviceItem,
+                                                deviceCode === device.id.toString() && styles.deviceItemSelected,
+                                            ]}
+                                            onPress={() => handleSelectDevice(device.id.toString())}
+                                        >
+                                            <Ionicons
+                                                name="hardware-chip-outline"
+                                                size={24}
+                                                color={deviceCode === device.id.toString() ? "#FFFFFF" : "#A0A8C8"}
+                                            />
+                                            <View style={styles.deviceInfo}>
+                                                <Text style={[
+                                                    styles.deviceName,
+                                                    deviceCode === device.id.toString() && styles.deviceTextSelected
+                                                ]}>
+                                                    Dispositif #{device.id}
+                                                </Text>
+                                            </View>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+                            </View>
                         )}
-                    </TouchableOpacity>
-                </View>
-            </ScrollView>
-        </KeyboardAvoidingView>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Ou entrer l'ID manuellement</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Ex: 12345"
+                                placeholderTextColor="#4A4E6A"
+                                autoCapitalize="none"
+                                value={deviceCode}
+                                onChangeText={setDeviceCode}
+                            />
+                        </View>
+
+                        <TouchableOpacity
+                            style={[styles.button, loading && styles.buttonDisabled]}
+                            onPress={handleJoin}
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <Text style={styles.buttonText}>Connecter</Text>
+                            )}
+                        </TouchableOpacity>
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: "#0D0D1A" },
+    logoutBtn: {
+        padding: 16,
+        alignItems: "flex-end",
+    },
     scrollContainer: { flexGrow: 1, justifyContent: "center", padding: 24 },
     logoWrapper: { alignItems: "center", marginBottom: 32 },
     logoCircle: {
@@ -193,5 +264,37 @@ const styles = StyleSheet.create({
         fontSize: 17,
         fontWeight: "bold",
         letterSpacing: 0.5,
+    },
+    deviceList: {
+        marginBottom: 20,
+    },
+    devicesScroll: {
+        maxHeight: 180,
+        marginTop: 8,
+    },
+    deviceItem: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "#0D0D1A",
+        padding: 12,
+        borderRadius: 12,
+        marginBottom: 8,
+        borderWidth: 1,
+        borderColor: "#2A2750",
+    },
+    deviceItemSelected: {
+        borderColor: "#7C3AED",
+        backgroundColor: "rgba(124, 58, 237, 0.15)",
+    },
+    deviceInfo: {
+        marginLeft: 12,
+    },
+    deviceName: {
+        color: "#A0A8C8",
+        fontSize: 16,
+        fontWeight: "600",
+    },
+    deviceTextSelected: {
+        color: "#FFFFFF",
     },
 });

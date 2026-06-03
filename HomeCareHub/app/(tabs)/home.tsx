@@ -16,6 +16,7 @@ import {
 import { API_URL } from '../../constants/api';
 import { useUser } from '../../contexts/UserContext';
 import { useResponsive } from '../../hooks/useResponsive';
+import { getPersonsByDevice } from '@/hooks/useDevice';
 
 interface Service {
   id: number;
@@ -27,13 +28,12 @@ interface Service {
 
 interface Personne {
   id: number;
-  name: string;
-  lastName: string;
+  username: string;
+  email: string;
   role: string;
   phone: string;
   facePhoto: string;
   isActive: boolean;
-
 }
 
 export default function Home() {
@@ -50,29 +50,12 @@ export default function Home() {
     if (!token || !deviceId) return;
 
     try {
-      const headers = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      };
-
-      const [personnesRes, servicesRes] = await Promise.all([
-        fetch(`${API_URL}/api/devices/${deviceId}/persons/`, {
-          headers,
-        }),
-        fetch(`${API_URL}/api/services/`, {
-          headers,
-        }).catch(() => null),
-      ]);
-
-      if (!personnesRes.ok) {
+      const personnesRes = await getPersonsByDevice(parseInt(deviceId!));
+      if (!personnesRes) {
         throw new Error('Failed loading persons');
       }
+      setPersonnes(personnesRes);
 
-      const personnesData = await personnesRes.json();
-      setPersonnes(
-        Array.isArray(personnesData) ? personnesData : []
-      );
-      console.log("personnesData : ", personnesData);
     } catch (error) {
       console.error(error);
       Alert.alert(
@@ -216,7 +199,7 @@ export default function Home() {
 
             <View style={styles.personneInfo}>
               <Text style={styles.personneName}>
-                {item.name + " " + item.lastName}
+                {item.username}
               </Text>
               <Text style={styles.personneRole}>
                 {item.role}
