@@ -17,6 +17,8 @@ model User {
   password  String
   phone     String?
   isAdmin   Boolean  @default(false)
+  facePhoto String?
+  faceEmbedding String?
   devices   Device[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -32,9 +34,7 @@ model Device {
 
 model Person {
   id            Int      @id @default(autoincrement())
-  name          String
-  lastName      String
-  phone         String?
+  userId        Int
   role          String?
   facePhoto     String?
   faceEmbedding String?  // JSON-serialized float array from face recognition

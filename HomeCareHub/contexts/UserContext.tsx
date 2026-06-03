@@ -58,6 +58,9 @@ export const getCurrentUser = async () => {
 export const getDeviceId = async () => {
   try {
     const tokenData = await storage.getItem("token");
+    if (!tokenData) {
+      return null;
+    }
     const token = JSON.parse(tokenData as string) as string;
     const deviceData = await fetch(`${API_URL}/api/devices/userDevices/`, {
       method: "GET",
@@ -67,7 +70,7 @@ export const getDeviceId = async () => {
       },
     });
     if (!deviceData.ok) {
-      throw new Error("Failed to fetch device id");
+      return null;
     }
     const data = await deviceData.json();
     return data[0];
@@ -136,7 +139,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       setToken(jwt);
       await storage.setItem("user", JSON.stringify(resourceData));
       await storage.setItem("token", JSON.stringify(jwt));
-      
+
       let fetchedDeviceId = null;
       try {
         fetchedDeviceId = await getDeviceId();

@@ -3,39 +3,19 @@ import { AuthRequest } from '../middlewares/authMiddleware';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import prisma from '../db';
+import { signupService } from '../services/authService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'hguipzhgbzioegbzibnljcnzeufbhzibskjnvhibgzefgbzkbjfeifbzibfziyvv';
 
 export const signup = async (req: Request, res: Response) => {
   try {
     const { username, email, password, phone, isAdmin } = req.body;
-
-    if (!username || !email || !password) {
-      return res.status(400).json({ error: 'Username, email, and password are required' });
+    const file = req.file as Express.Multer.File | null;
+    const result = await signupService({ username, email, password, phone, isAdmin, file });
+    if (result.error) {
+      return res.status(result.status).json({ error: result.error });
     }
-
-    const existingUser = await prisma.user.findFirst({
-      where: { OR: [{ email }, { username }] },
-    });
-
-    if (existingUser) {
-      return res.status(400).json({ error: 'User already exists' });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = await prisma.user.create({
-      data: {
-        username,
-        email,
-        password: hashedPassword,
-        phone,
-        isAdmin: isAdmin || false,
-      },
-    });
-
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1d' });
-    res.status(201).json({ token });
+    return res.status(result.status).json({ token: result.token });
   } catch (error) {
     console.error('Signup error:', error);
     res.status(500).json({ error: 'Failed to sign up' });

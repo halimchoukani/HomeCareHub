@@ -11,7 +11,7 @@ import { useResponsive } from '../../hooks/useResponsive';
 
 export default function AddPerson() {
   const router = useRouter();
-  const { token, user } = useUser();
+  const { token, user, deviceId } = useUser();
 
   const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [name, setName] = useState('');
@@ -69,16 +69,17 @@ export default function AddPerson() {
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append('nom', name.trim());
+      formData.append('name', name.trim());
+      formData.append('lastName', name.trim());
       formData.append('role', role.trim());
-      formData.append('telephone', phone.trim());
-      formData.append('photo', {
+      formData.append('phone', phone.trim());
+      formData.append('facePhoto', {
         uri: photo.uri,
         name: 'photo.jpg',
         type: 'image/jpeg',
       } as any);
 
-      const response = await fetch(`${API_URL}/api/devices/ajouter/`, {
+      const response = await fetch(`${API_URL}/api/devices/${deviceId}/persons/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
