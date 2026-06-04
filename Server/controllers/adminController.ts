@@ -38,6 +38,7 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
   }
 };
 
+
 export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
   try {
     const users = await prisma.user.findMany({
@@ -48,6 +49,7 @@ export const getAllUsers = async (req: Request, res: Response): Promise<void> =>
         phone: true,
         isAdmin: true,
         createdAt: true,
+        facePhoto: true,
         _count: {
           select: { devices: true }
         }
@@ -99,6 +101,11 @@ export const getAllDevices = async (req: Request, res: Response): Promise<void> 
       include: {
         user: {
           select: { username: true, email: true }
+        },
+        persons: {
+          select: {
+            userId: true
+          }
         },
         _count: {
           select: { persons: true }

@@ -71,9 +71,9 @@ export default function DashboardView({ loading, data, onNavigateToTab }: Dashbo
 
       {/* Grid of Dynamic Statistical Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        
+
         {/* Metric 1 */}
-        <motion.div 
+        <motion.div
           onClick={() => onNavigateToTab("users")}
           whileHover={{ y: -3, scale: 1.01 }}
           className="group relative cursor-pointer glass-panel p-6 rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/5 dark:hover:border-indigo-500/20"
@@ -97,7 +97,7 @@ export default function DashboardView({ loading, data, onNavigateToTab }: Dashbo
         </motion.div>
 
         {/* Metric 2 */}
-        <motion.div 
+        <motion.div
           onClick={() => onNavigateToTab("devices")}
           whileHover={{ y: -3, scale: 1.01 }}
           className="group relative cursor-pointer glass-panel p-6 rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-cyan-500/5 dark:hover:border-cyan-500/20"
@@ -121,7 +121,7 @@ export default function DashboardView({ loading, data, onNavigateToTab }: Dashbo
         </motion.div>
 
         {/* Metric 3 */}
-        <motion.div 
+        <motion.div
           whileHover={{ y: -3, scale: 1.01 }}
           className="group relative glass-panel p-6 rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-emerald-500/5 dark:hover:border-emerald-500/20"
           id="stat-card-persons"
@@ -144,7 +144,7 @@ export default function DashboardView({ loading, data, onNavigateToTab }: Dashbo
         </motion.div>
 
         {/* Metric 4 */}
-        <motion.div 
+        <motion.div
           whileHover={{ y: -3, scale: 1.01 }}
           className="group relative glass-panel p-6 rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-rose-500/5 dark:hover:border-rose-500/20"
           id="stat-card-alerts"
@@ -203,39 +203,39 @@ export default function DashboardView({ loading, data, onNavigateToTab }: Dashbo
                 >
                   <defs>
                     <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="colorDevices" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" className="dark:hidden" />
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" className="hidden dark:block" />
-                  <XAxis 
-                    dataKey="name" 
-                    stroke="#94a3b8" 
+                  <XAxis
+                    dataKey="name"
+                    stroke="#94a3b8"
                     fontSize={11}
                     tickLine={false}
                   />
-                  <YAxis 
-                    stroke="#94a3b8" 
+                  <YAxis
+                    stroke="#94a3b8"
                     fontSize={11}
                     tickLine={false}
                   />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: "rgba(15, 23, 42, 0.9)", 
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "rgba(15, 23, 42, 0.9)",
                       borderColor: "rgba(255, 255, 255, 0.1)",
                       color: "#fff",
                       borderRadius: "12px",
                       fontSize: "12px"
                     }}
                   />
-                  <Legend 
-                    verticalAlign="top" 
-                    height={36} 
+                  <Legend
+                    verticalAlign="top"
+                    height={36}
                     iconType="circle"
                     iconSize={8}
                     wrapperStyle={{ fontSize: "12px" }}
@@ -310,7 +310,7 @@ export default function DashboardView({ loading, data, onNavigateToTab }: Dashbo
 
       {/* Alerts Feed and Historical Activity logs */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Alerts Center Feed (Left 2/3) */}
         <div className="lg:col-span-2 glass-panel p-6 rounded-3xl" id="alarms-monitoring-feed">
           <div className="flex justify-between items-center mb-4">
@@ -324,28 +324,26 @@ export default function DashboardView({ loading, data, onNavigateToTab }: Dashbo
             </div>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
             {alerts.length === 0 ? (
               <div className="text-center p-8 text-sm text-slate-400">All alerts resolved successfully.</div>
             ) : (
               alerts.map((alert) => (
-                <div 
+                <div
                   key={alert.id}
-                  className={`flex items-start gap-4 p-4 rounded-xl border transition-all hover:bg-slate-50 dark:hover:bg-slate-900/30 ${
-                    alert.type === "critical"
-                      ? "bg-rose-500/5 border-rose-500/20 text-rose-800 dark:text-rose-200"
-                      : alert.type === "warning"
+                  className={`flex items-start gap-4 p-4 rounded-xl border transition-all hover:bg-slate-50 dark:hover:bg-slate-900/30 ${alert.type === "critical"
+                    ? "bg-rose-500/5 border-rose-500/20 text-rose-800 dark:text-rose-200"
+                    : alert.type === "warning"
                       ? "bg-amber-500/5 border-amber-500/20 text-amber-800 dark:text-amber-200"
                       : "bg-sky-500/5 border-sky-500/20 text-sky-800 dark:text-sky-200"
-                  }`}
+                    }`}
                   id={`dashboard-alert-feed-${alert.id}`}
                 >
-                  <span className={`p-2 rounded-lg ${
-                    alert.type === "critical" ? "bg-rose-500/10 text-rose-500" : alert.type === "warning" ? "bg-amber-500/10 text-amber-500" : "bg-sky-500/10 text-sky-500"
-                  }`}>
+                  <span className={`p-2 rounded-lg ${alert.type === "critical" ? "bg-rose-500/10 text-rose-500" : alert.type === "warning" ? "bg-amber-500/10 text-amber-500" : "bg-sky-500/10 text-sky-500"
+                    }`}>
                     {alert.type === "critical" ? <ShieldAlert className="w-4.5 h-4.5" /> : alert.type === "warning" ? <AlertCircle className="w-4.5 h-4.5" /> : <Activity className="w-4.5 h-4.5" />}
                   </span>
-                  
+
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start gap-2">
                       <h5 className="text-xs font-extrabold uppercase tracking-wide opacity-80 font-mono">

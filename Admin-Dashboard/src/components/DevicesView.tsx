@@ -11,6 +11,8 @@ interface DevicesViewProps {
 }
 
 export default function DevicesView({ loading, devices, onDeleteDevice, onCreateDevice }: DevicesViewProps) {
+  console.log(devices);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "online" | "warning" | "offline">("all");
 
@@ -24,8 +26,7 @@ export default function DevicesView({ loading, devices, onDeleteDevice, onCreate
   const filteredDevices = devices.filter((d) => {
     const matchesSearch =
       d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      d.ownerUsername.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      d.model.toLowerCase().includes(searchTerm.toLowerCase());
+      d.user.username.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = statusFilter === "all" || d.status === statusFilter;
 
@@ -149,8 +150,8 @@ export default function DevicesView({ loading, devices, onDeleteDevice, onCreate
                 <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-500/5">
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Node Diagnostic</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Associated Profile</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Model Specifications</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Pulse Status</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Registered Persons</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Device Status</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 text-right">Service Actions</th>
                 </tr>
               </thead>
@@ -162,10 +163,10 @@ export default function DevicesView({ loading, devices, onDeleteDevice, onCreate
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-xl text-white ${dev.status === "online"
-                            ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/15"
-                            : dev.status === "warning"
-                              ? "bg-amber-500/10 text-amber-500 border border-amber-500/15"
-                              : "bg-rose-500/10 text-rose-500 border border-rose-500/15"
+                          ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/15"
+                          : dev.status === "warning"
+                            ? "bg-amber-500/10 text-amber-500 border border-amber-500/15"
+                            : "bg-rose-500/10 text-rose-500 border border-rose-500/15"
                           }`}>
                           <Cpu className="w-4 h-4" />
                         </div>
@@ -182,21 +183,30 @@ export default function DevicesView({ loading, devices, onDeleteDevice, onCreate
 
                     {/* Associated Caregiver owner */}
                     <td className="px-6 py-4">
-                      <div className="text-slate-700 dark:text-slate-300">
-                        <p className="font-bold text-xs flex items-center gap-1">
-                          <User className="w-3 h-3 text-slate-400" />
-                          @{dev.ownerUsername}
-                        </p>
-                        <p className="text-[10px] text-slate-400 font-mono mt-0.5">{dev.ownerEmail || `${dev.ownerUsername}@homecare.com`}</p>
-                      </div>
+                      {dev?.user ? (
+                        <div className="text-slate-700 dark:text-slate-300">
+                          <p className="font-bold text-xs flex items-center gap-1">
+                            <User className="w-3 h-3 text-slate-400" />
+                            @{dev?.user?.username}
+                          </p>
+                          <p className="text-[10px] text-slate-400 font-mono mt-0.5">{dev?.user?.email}</p>
+                        </div>
+                      ) : (
+                        <div className="text-slate-700 dark:text-slate-300">
+                          <p className="font-bold text-xs flex items-center gap-1">
+                            <User className="w-3 h-3 text-slate-400" />
+                            No Caregiver
+                          </p>
+                          <p className="text-[10px] text-slate-400 font-mono mt-0.5">No caregiver is associated with this device</p>
+                        </div>
+                      )}
                     </td>
 
                     {/* Model Spec */}
                     <td className="px-6 py-4">
                       <span className="text-xs font-mono font-bold bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800">
-                        {dev.model}
-                      </span>
-                      <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 uppercase tracking-wider font-bold">Signal: {dev.signalStrength}</p>
+                        {dev._count.persons}
+                      </span> Registered Persons
                     </td>
 
                     {/* Signal / Battery Health Indicators */}
@@ -219,7 +229,7 @@ export default function DevicesView({ loading, devices, onDeleteDevice, onCreate
                           </span>
                         )}
                       </div>
-                      <p className="text-[10px] text-slate-400 font-medium mt-1 font-mono tracking-tight">{dev.registeredPersonsCount} Patient monitored</p>
+                      <p className="text-[10px] text-slate-400 font-medium mt-1 font-mono tracking-tight">{dev._count.persons} Person monitored</p>
                     </td>
 
                     {/* Device Disconnect delete control button alignment right */}

@@ -1,32 +1,31 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   Activity,
-  ShieldAlert,
   Cpu,
   Users,
   Megaphone,
   LogOut,
-  Sun,
-  Moon,
   Wifi,
   WifiOff,
-  Key,
-  Lock,
   CornerDownRight,
-  User,
-  Compass,
   Terminal,
-  Grid,
-  BellRing
+  Grid
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { io, Socket } from "socket.io-client";
+import { Routes, Route, Link, useLocation, useNavigate } from "react-router-dom";
+
+import { fetchDashboardData as apiFetchDashboard } from "./api/dashboard";
+import { fetchUsers as apiFetchUsers, deleteUser } from "./api/users";
+import { fetchDevices as apiFetchDevices, deleteDevice, createDevice } from "./api/devices";
+import { sendDirectMessage, sendGlobalBroadcast } from "./api/messages";
 
 import { DashboardPayload, User as TypeUser, Device as TypeDevice } from "./types";
-import DashboardView from "./components/DashboardView";
-import UsersView from "./components/UsersView";
-import DevicesView from "./components/DevicesView";
-import LogsView from "./components/LogsView";
+import DashboardPage from "./pages/dashboard";
+import LoginPage from "./pages/login";
+import UsersPage from "./pages/users";
+import DevicesPage from "./pages/devices";
+import LogsPage from "./pages/logs";
 import BroadcastModal from "./components/BroadcastModal";
 import NotificationToast, { ToastItem } from "./components/NotificationToast";
 
@@ -39,12 +38,12 @@ export default function App() {
 
   // Auth structures & states
   const [token, setToken] = useState<string | null>(() => localStorage.getItem("carehub_admin_token"));
-  const [loginUsername, setLoginUsername] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
   const [customKey, setCustomKey] = useState("carehub_jwt_super_access_key_99");
 
   // Routing / View Tabs
-  const [currentTab, setCurrentTab] = useState<string>("dashboard");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const currentTab = location.pathname === "/" ? "dashboard" : location.pathname.substring(1);
 
   // Main payloads
   const [dashboardData, setDashboardData] = useState<DashboardPayload | null>(null);
@@ -106,13 +105,7 @@ export default function App() {
   const fetchDashboardData = async (activeToken: string) => {
     try {
       setLoadingDashboard(true);
-      const res = await fetch("/api/admin/dashboard", {
-        headers: {
-          Authorization: `Bearer ${activeToken}`
-        }
-      });
-      if (!res.ok) throw new Error("Credentials outdated or refused");
-      const d = await res.json();
+      const d = await apiFetchDashboard(activeToken);
       setDashboardData(d);
     } catch (err: any) {
       pushToast("error", "Intel Sync Refused", err.message || "Failed retrieving stats");
@@ -124,13 +117,7 @@ export default function App() {
   const fetchUsers = async (activeToken: string) => {
     try {
       setLoadingUsers(true);
-      const res = await fetch("/api/admin/users", {
-        headers: {
-          Authorization: `Bearer ${activeToken}`
-        }
-      });
-      if (!res.ok) throw new Error("Failed syncing caregiver logs");
-      const u = await res.json();
+      const u = await apiFetchUsers(activeToken);
       setUsersList(u);
     } catch (err: any) {
       pushToast("error", "Caregiver Sync Failed", err.message);
@@ -142,13 +129,7 @@ export default function App() {
   const fetchDevices = async (activeToken: string) => {
     try {
       setLoadingDevices(true);
-      const res = await fetch("/api/admin/devices", {
-        headers: {
-          Authorization: `Bearer ${activeToken}`
-        }
-      });
-      if (!res.ok) throw new Error("Failed syncing devices registry");
-      const dev = await res.json();
+      const dev = await apiFetchDevices(activeToken);
       setDevicesList(dev);
     } catch (err: any) {
       pushToast("error", "Device Registry Refused", err.message);
@@ -244,40 +225,13 @@ export default function App() {
     pushToast("system", "Operator Deregistered", "Cleared all stored bearer authorization indexes from storage.");
   };
 
-  // Demo Admin access quick-bypass setup
-  const handleLogin = async () => {
-    const res = await fetch("/api/admin/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: loginUsername,
-        password: loginPassword
-      })
-    });
-    if (!res.ok) {
-      pushToast("error", "Authentication Failed", "Credentials might be invalid.");
-      return;
-    }
-    const data = await res.json();
-
-    localStorage.setItem("carehub_admin_token", data.token);
-    setToken(data.token);
-    pushToast("success", "Authentication Approved", "Admin session generated automatically with high security clearance.");
-  };
+  // Demo Admin access quick-bypass setup has been moved to LoginPage
 
   // Deleting user profiles via DELETE /api/admin/users/:id
   const handleDeleteUser = async (userId: string): Promise<boolean> => {
     if (!token) return false;
     try {
-      const res = await fetch(`/api/admin/users/${userId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      if (!res.ok) throw new Error("Database override refused delete requests.");
+      await deleteUser(userId, token);
 
       // Update local state directly
       setUsersList((prev) => prev.filter((u) => u.id !== userId));
@@ -297,13 +251,7 @@ export default function App() {
   const handleDeleteDevice = async (deviceId: string): Promise<boolean> => {
     if (!token) return false;
     try {
-      const res = await fetch(`/api/admin/devices/${deviceId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      if (!res.ok) throw new Error("Could not sever node endpoint connection.");
+      await deleteDevice(deviceId, token);
 
       // Refresh state lists
       setDevicesList((prev) => prev.filter((d) => d.id !== deviceId));
@@ -321,15 +269,7 @@ export default function App() {
   const handleCreateDevice = async (name: string): Promise<boolean> => {
     if (!token) return false;
     try {
-      const res = await fetch("/api/devices/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ name })
-      });
-      if (!res.ok) throw new Error("Failed to register new IoT node.");
+      await createDevice(name, token);
 
       // Refresh devices
       fetchDevices(token);
@@ -343,20 +283,10 @@ export default function App() {
     }
   };
 
-  // Direct socket chat messenger dispatch via POST /api/admin/message
   const handleDirectMessage = async (userId: string, content: string): Promise<boolean> => {
     if (!token) return false;
     try {
-      const res = await fetch("/api/admin/message", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ userId, message: content })
-      });
-      if (!res.ok) throw new Error("Carrier dispatch failed reporting connection codes.");
-      const feedback = await res.json();
+      const feedback = await sendDirectMessage(userId, content, token);
 
       // Local tracking of timeline inserts
       if (feedback?.log) {
@@ -381,16 +311,7 @@ export default function App() {
   const handleGlobalBroadcast = async (content: string): Promise<boolean> => {
     if (!token) return false;
     try {
-      const res = await fetch("/api/admin/message", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ message: content }) // userId left blank for broad scope
-      });
-      if (!res.ok) throw new Error("Vanguard Broadcast node refused validation.");
-      const feedback = await res.json();
+      const feedback = await sendGlobalBroadcast(content, token);
 
       if (feedback?.log) {
         setDashboardData((prev) => {
@@ -413,80 +334,12 @@ export default function App() {
   // 5. Auth Login Shield Page render
   if (!token) {
     return (
-      <div id="auth-shield-page" className="min-h-screen relative overflow-hidden flex items-center justify-center bg-slate-900 text-slate-100 p-6">
-        {/* Neon blur ambient circles */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-indigo-500/10 blur-[130px] pointer-events-none" />
-        <div className="absolute bottom-1/4 right-1/4 w-[450px] h-[450px] rounded-full bg-cyan-500/10 blur-[150px] pointer-events-none" />
-
-        <div className="relative w-full max-w-md" id="auth-card-block">
-
-          {/* Header icon */}
-          <div className="text-center mb-8">
-            <div className="mx-auto w-14 h-14 bg-gradient-to-tr from-indigo-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20 mb-3 animate-pulse">
-              <Activity className="w-7 h-7 text-white" />
-            </div>
-            <h1 className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
-              HomeCareHub Operations
-            </h1>
-            <p className="text-xs text-slate-400 mt-1 font-medium">Secondary Command & Telemetry Administration Gateway</p>
-          </div>
-
-          {/* Form container */}
-          <div className="glass-panel backdrop-blur-3xl border border-white/5 p-8 rounded-2xl shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-indigo-500 via-violet-500 to-cyan-500" />
-
-            <div className="space-y-4">
-
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Clearance Operator Profile</label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
-                    <User className="w-4 h-4" />
-                  </span>
-                  <input
-                    type="text"
-
-                    value={loginUsername}
-                    onChange={(e) => setLoginUsername(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-950/40 border border-white/5 text-slate-400 text-sm rounded-xl outline-none select-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Gateway Safety Password</label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
-                    <Lock className="w-4 h-4" />
-                  </span>
-                  <input
-                    type="password"
-
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-950/40 border border-white/5 text-slate-500 text-sm rounded-xl outline-none select-none"
-                  />
-                </div>
-              </div>
-
-
-              <div className="pt-2">
-                <button
-                  id="demo-login-submit"
-                  onClick={handleLogin}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 top-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-sm font-bold tracking-tight shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/45 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  Sign In
-                </button>
-              </div>
-
-            </div>
-          </div>
-
-          {/* Toast diagnostics */}
-          <NotificationToast toasts={toasts} removeToast={removeToast} />
-        </div>
-      </div>
+      <LoginPage
+        setToken={setToken}
+        pushToast={pushToast}
+        toasts={toasts}
+        removeToast={removeToast}
+      />
     );
   }
 
@@ -527,18 +380,18 @@ export default function App() {
           {/* Sidebar Menu selections */}
           <nav className="p-4 space-y-1.5" id="sidebar-tabs-navigation">
             {[
-              { id: "dashboard", label: "Intel Dashboard", icon: Grid },
-              { id: "users", label: "User Directory", icon: Users },
-              { id: "devices", label: "IoT Node Registry", icon: Cpu },
-              { id: "logs", label: "Signal Timelines", icon: Terminal }
+              { id: "dashboard", path: "/", label: "Intel Dashboard", icon: Grid },
+              { id: "users", path: "/users", label: "User Directory", icon: Users },
+              { id: "devices", path: "/devices", label: "IoT Node Registry", icon: Cpu },
+              { id: "logs", path: "/logs", label: "Signal Timelines", icon: Terminal }
             ].map((tab) => {
               const TabIcon = tab.icon;
-              const isActive = currentTab === tab.id;
+              const isActive = currentTab === tab.id || (currentTab === "" && tab.id === "dashboard");
               return (
-                <button
+                <Link
                   key={tab.id}
                   id={`sidebar-tab-button-${tab.id}`}
-                  onClick={() => setCurrentTab(tab.id)}
+                  to={tab.path}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-semibold rounded-xl tracking-tight transition-all cursor-pointer ${isActive
                     ? "bg-white/60 dark:bg-white/10 border border-white/20 dark:border-white/10 text-indigo-600 dark:text-white font-bold shadow-sm"
                     : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-white/20 dark:hover:bg-white/5"
@@ -546,7 +399,7 @@ export default function App() {
                 >
                   <TabIcon className="w-4 h-4" />
                   {tab.label}
-                </button>
+                </Link>
               );
             })}
           </nav>
@@ -586,7 +439,7 @@ export default function App() {
             <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider font-mono">Workspace</span>
             <CornerDownRight className="w-3 h-3 text-slate-400" />
             <h2 className="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest font-mono">
-              / {currentTab}
+              / {currentTab || "dashboard"}
             </h2>
           </div>
 
@@ -623,44 +476,43 @@ export default function App() {
         <main className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto overflow-y-auto" id="workspace-viewports-container">
           <AnimatePresence mode="wait">
             <motion.div
-              key={currentTab}
+              key={location.pathname}
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
               transition={{ duration: 0.2 }}
             >
-              {currentTab === "dashboard" && (
-                <DashboardView
-                  loading={loadingDashboard}
-                  data={dashboardData}
-                  onNavigateToTab={setCurrentTab}
-                />
-              )}
-
-              {currentTab === "users" && (
-                <UsersView
-                  loading={loadingUsers}
-                  users={usersList}
-                  onDeleteUser={handleDeleteUser}
-                  onSendMessage={handleDirectMessage}
-                />
-              )}
-
-              {currentTab === "devices" && (
-                <DevicesView
-                  loading={loadingDevices}
-                  devices={devicesList}
-                  onDeleteDevice={handleDeleteDevice}
-                  onCreateDevice={handleCreateDevice}
-                />
-              )}
-
-              {currentTab === "logs" && (
-                <LogsView
-                  loading={loadingDashboard}
-                  messageHistory={dashboardData?.messageHistory || []}
-                />
-              )}
+              <Routes location={location}>
+                <Route path="/" element={
+                  <DashboardPage
+                    loading={loadingDashboard}
+                    data={dashboardData}
+                    onNavigateToTab={(tab) => navigate(tab === 'dashboard' ? '/' : `/${tab}`)}
+                  />
+                } />
+                <Route path="/users" element={
+                  <UsersPage
+                    loading={loadingUsers}
+                    users={usersList}
+                    onDeleteUser={handleDeleteUser}
+                    onSendMessage={handleDirectMessage}
+                  />
+                } />
+                <Route path="/devices" element={
+                  <DevicesPage
+                    loading={loadingDevices}
+                    devices={devicesList}
+                    onDeleteDevice={handleDeleteDevice}
+                    onCreateDevice={handleCreateDevice}
+                  />
+                } />
+                <Route path="/logs" element={
+                  <LogsPage
+                    loading={loadingDashboard}
+                    messageHistory={dashboardData?.messageHistory || []}
+                  />
+                } />
+              </Routes>
             </motion.div>
           </AnimatePresence>
         </main>

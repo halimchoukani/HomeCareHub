@@ -11,21 +11,28 @@ export interface User {
   id: string;
   username: string;
   email: string;
+  phone: string;
+  role: string;
+  facePhoto?: string;
   isAdmin: boolean;
-  deviceCount: number;
-  joinDate: string;
+  _count: { devices: number };
+  createdAt: string;
 }
 
 export interface Device {
   id: string;
   name: string;
-  ownerId: string;
-  ownerUsername: string;
-  ownerEmail: string;
-  registeredPersonsCount: number;
+  user: {
+    username: string;
+    email: string;
+  };
+  persons: {
+    userId: string;
+  }[];
+  _count: {
+    persons: number;
+  };
   status: "online" | "warning" | "offline";
-  model: string;
-  signalStrength: string;
 }
 
 export interface Alert {

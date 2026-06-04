@@ -27,7 +27,7 @@ export default function UsersView({ loading, users, onDeleteUser, onSendMessage 
     const matchesSearch =
       u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.email.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     if (isAdminFilter === "admin") return matchesSearch && u.isAdmin;
     if (isAdminFilter === "user") return matchesSearch && !u.isAdmin;
     return matchesSearch;
@@ -64,7 +64,7 @@ export default function UsersView({ loading, users, onDeleteUser, onSendMessage 
 
   return (
     <div id="users-view-panel" className="space-y-6">
-      
+
       {/* Title Header and Summary Counts */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -81,7 +81,7 @@ export default function UsersView({ loading, users, onDeleteUser, onSendMessage 
 
       {/* Modern Search Filters panel */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-3xl glass-panel">
-        
+
         {/* Search input */}
         <div className="relative md:col-span-2">
           <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
@@ -103,11 +103,10 @@ export default function UsersView({ loading, users, onDeleteUser, onSendMessage 
             <button
               key={filter}
               onClick={() => setIsAdminFilter(filter)}
-              className={`flex-1 text-center text-xs font-bold py-2 rounded-lg transition-all capitalize cursor-pointer ${
-                isAdminFilter === filter
-                  ? "bg-white dark:bg-slate-900 shadow-md text-indigo-500 dark:text-indigo-400"
-                  : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-              }`}
+              className={`flex-1 text-center text-xs font-bold py-2 rounded-lg transition-all capitalize cursor-pointer ${isAdminFilter === filter
+                ? "bg-white dark:bg-slate-900 shadow-md text-indigo-500 dark:text-indigo-400"
+                : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                }`}
             >
               {filter === "all" ? "All Profiles" : filter}
             </button>
@@ -118,7 +117,7 @@ export default function UsersView({ loading, users, onDeleteUser, onSendMessage 
 
       {/* Grid List Table */}
       <div className="glass-panel rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800/80">
-        
+
         {loading ? (
           <div className="p-8 space-y-4 animate-pulse">
             {[...Array(5)].map((_, i) => (
@@ -152,12 +151,12 @@ export default function UsersView({ loading, users, onDeleteUser, onSendMessage 
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium text-sm text-slate-700 dark:text-slate-300">
                 {filteredUsers.map((user) => (
                   <tr key={user.id} className="hover:bg-slate-500/5 group transition-colors" id={`user-row-${user.id}`}>
-                    
+
                     {/* User profile with custom badges */}
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500/10 to-violet-500/10 text-indigo-500 border border-indigo-500/10 flex items-center justify-center font-bold text-xs uppercase shadow-sm">
-                          {user.username.charAt(0)}
+                          {user.facePhoto ? <img src={user.facePhoto} alt="" className="w-8 h-8 rounded-full" /> : user.username.charAt(0)}
                         </div>
                         <div>
                           <p id={`user-row-username-${user.id}`} className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5 leading-snug">
@@ -169,7 +168,7 @@ export default function UsersView({ loading, users, onDeleteUser, onSendMessage 
                             )}
                           </p>
                           <span className="text-[10px] uppercase font-mono tracking-wider opacity-60">
-                            {user.isAdmin ? "Platform Admin" : "Primary Caregiver"}
+                            {user.isAdmin ? "Platform Admin" : user.phone}
                           </span>
                         </div>
                       </div>
@@ -186,8 +185,8 @@ export default function UsersView({ loading, users, onDeleteUser, onSendMessage 
                     {/* Node count */}
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-1.5 font-mono">
-                        <span className={`w-2 h-2 rounded-full ${user.deviceCount > 0 ? "bg-cyan-500 animate-pulse" : "bg-slate-300 dark:bg-slate-700"}`} />
-                        <span className="font-bold">{user.deviceCount}</span>
+                        <span className={`w-2 h-2 rounded-full ${user._count.devices > 0 ? "bg-cyan-500 animate-pulse" : "bg-slate-300 dark:bg-slate-700"}`} />
+                        <span className="font-bold">{user._count.devices}</span>
                         <span className="text-xs text-slate-400 opacity-80">linked devices</span>
                       </div>
                     </td>
@@ -196,14 +195,14 @@ export default function UsersView({ loading, users, onDeleteUser, onSendMessage 
                     <td className="px-6 py-4 text-slate-500 dark:text-slate-400 font-mono text-xs">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3.5 h-3.5 opacity-60" />
-                        {user.joinDate}
+                        {new Date(user.createdAt).toLocaleDateString()}
                       </span>
                     </td>
 
                     {/* Action Panel alignment right */}
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        
+
                         {/* Direct messaging modal trigger button */}
                         <button
                           id={`user-msg-btn-${user.id}`}
@@ -239,7 +238,7 @@ export default function UsersView({ loading, users, onDeleteUser, onSendMessage 
       <AnimatePresence>
         {deleteModalUser && (
           <div id="delete-user-modal-overlay" className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            
+
             {/* Backdrop blur overlay */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -256,7 +255,7 @@ export default function UsersView({ loading, users, onDeleteUser, onSendMessage 
               exit={{ scale: 0.9, y: 15, opacity: 0 }}
               className="relative w-full max-w-md glass-panel p-6 rounded-3xl shadow-2xl z-10 border border-slate-200 dark:border-slate-800"
             >
-              
+
               <div className="flex items-center gap-3 p-3 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-xl mb-4">
                 <AlertTriangle className="w-5 h-5 flex-shrink-0 text-rose-500 animate-pulse" />
                 <h3 className="font-bold text-sm">Destructive Profile Removal Operation</h3>
@@ -265,7 +264,7 @@ export default function UsersView({ loading, users, onDeleteUser, onSendMessage 
               <h4 className="text-base font-bold text-slate-900 dark:text-white leading-tight">
                 Purge primary profile associated with <span className="font-mono text-rose-500">"{deleteModalUser.username}"</span>?
               </h4>
-              
+
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
                 This is a critical system operator override. Purging will immediately disconnect their IoT nodes count ({deleteModalUser.deviceCount} registered devices) and delete all associated telemetry indexes from the database permanently.
               </p>
@@ -298,7 +297,7 @@ export default function UsersView({ loading, users, onDeleteUser, onSendMessage 
       <AnimatePresence>
         {messageModalUser && (
           <div id="message-user-modal-overlay" className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            
+
             {/* Backdrop blur overlay */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -315,7 +314,7 @@ export default function UsersView({ loading, users, onDeleteUser, onSendMessage 
               exit={{ scale: 0.9, y: 15, opacity: 0 }}
               className="relative w-full max-w-lg glass-panel p-6 rounded-3xl shadow-2xl z-10 border border-slate-200 dark:border-slate-800"
             >
-              
+
               <div className="flex items-center gap-3 p-3 bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-xl mb-4">
                 <Send className="w-5 h-5 flex-shrink-0 text-indigo-500 animate-pulse" />
                 <h3 className="font-bold text-sm">Direct Caregiver Chat Broadcast</h3>
@@ -324,7 +323,7 @@ export default function UsersView({ loading, users, onDeleteUser, onSendMessage 
               <h4 className="text-base font-bold text-slate-900 dark:text-white leading-tight">
                 Addressing Socket to caregiver <span className="font-mono text-indigo-500">@{messageModalUser.username}</span>
               </h4>
-              
+
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                 Use this connection to instantly trigger high-alert notifications on the targeted CareHub mobile app or ambient gateway hub.
               </p>
