@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { api, API_URL, setAuthToken } from "../constants/api";
 import storage from "./storage";
+import { getRole } from "@/hooks/useDevice";
 
 interface User {
   id?: number;
@@ -83,6 +84,7 @@ export const getDeviceId = async () => {
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [deviceId, setDeviceId] = useState<string | null>(null);
@@ -110,6 +112,23 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     };
     loadUser();
   }, []);
+
+  useEffect(() => {
+    if (!deviceId) return;
+    const loadRole = async () => {
+      try {
+        const roleData = await getRole(Number(deviceId));
+        if (roleData) {
+          setRole(roleData);
+        }
+      } catch (error) {
+        console.error("Error loading user data:", error);
+      }
+    };
+    loadRole();
+  }, [deviceId]);
+
+
   useEffect(() => {
     const loadDeviceId = async () => {
       try {
@@ -166,7 +185,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     deviceId,
     setDeviceId,
     token,
-    role: user?.role || null,
+    role,
     loading,
     login,
     logout,

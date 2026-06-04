@@ -41,10 +41,6 @@ export const getPersonsByDevice = async (req: Request, res: Response) => {
   try {
     const { deviceId } = req.params;
     const userId = getUserIdFromToken(req.headers.authorization?.split(' ')[1] || '');
-    const isAssigned = await isAssignedToUser({ deviceId: parseInt(deviceId as string, 10), userId });
-    if (!isAssigned) {
-      return res.status(403).json({ error: 'You do not have permission to perform this action' });
-    }
     const result = await getPersonsByDeviceId({ deviceId: parseInt(deviceId as string, 10) });
     if (result.error) {
       return res.status(result.status).json({ error: result.error });

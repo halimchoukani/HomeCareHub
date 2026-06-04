@@ -51,3 +51,21 @@ export const toggleBlockStatus = async (deviceId: number, personId: number, acti
         return null;
     }
 }
+
+
+export const getRole = async (deviceId: number) => {
+    try {
+        const token = await getTokenFromStorage();
+
+        const res = await api.get(`/devices/${deviceId}/role/`, {
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        return res.data;
+    } catch (error: any) {
+        console.error("Error while fetching role: ", error.response?.data || error.message);
+        return null;
+    }
+}

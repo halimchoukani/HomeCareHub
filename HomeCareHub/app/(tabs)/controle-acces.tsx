@@ -31,7 +31,7 @@ interface Personne {
 
 export default function ControleAcces() {
   const router = useRouter();
-  const { token, deviceId } = useUser();
+  const { token, deviceId, role, user } = useUser();
   const [persons, setPersons] = useState<Personne[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState(0);
@@ -135,7 +135,7 @@ export default function ControleAcces() {
         <Text style={styles.cardTime}>
           {item.createdAt}
         </Text>
-        {item.role !== "owner" && (
+        {item.role !== "owner" && role === "owner" && (
           <View style={styles.cardBtns}>
 
             <TouchableOpacity
@@ -195,12 +195,16 @@ export default function ControleAcces() {
             </Text>
           </View>
         </View>
-        <TouchableOpacity
-          style={styles.addBtn}
-          onPress={() => router.push("/add-person")}
-        >
-          <Text style={styles.addBtnText}>＋ Ajouter</Text>
-        </TouchableOpacity>
+        {
+          role === "owner" && (
+            <TouchableOpacity
+              style={styles.addBtn}
+              onPress={() => router.push("/add-person")}
+            >
+              <Text style={styles.addBtnText}>＋ Ajouter</Text>
+            </TouchableOpacity>
+          )
+        }
       </View>
 
       <View style={styles.statsRow}>
@@ -301,9 +305,13 @@ export default function ControleAcces() {
         <View style={styles.emptyState}>
           <Text style={styles.emptyIcon}>👤</Text>
           <Text style={styles.emptyTitle}>Aucune personne trouvée</Text>
-          <Text style={styles.emptySub}>
-            Appuyez sur + Ajouter pour en ajouter une
-          </Text>
+          {
+            role === "owner" && (
+              <Text style={styles.emptySub}>
+                Appuyez sur + Ajouter pour en ajouter une
+              </Text>
+            )
+          }
         </View>
       ) : (
         <FlatList
@@ -318,12 +326,14 @@ export default function ControleAcces() {
         />
       )}
 
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push("/add-person")}
-      >
-        <Text style={styles.fabText}>＋</Text>
-      </TouchableOpacity>
+      {role === "owner" && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => router.push("/add-person")}
+        >
+          <Text style={styles.fabText}>＋</Text>
+        </TouchableOpacity>
+      )}
 
       <Modal
         visible={!!selected}
@@ -379,73 +389,85 @@ export default function ControleAcces() {
                   <Text style={styles.modalInfoValue}>{selected.role}</Text>
                 </View>
                 <Text style={styles.modalSectionTitle}>Modifier le statut</Text>
-                <View style={styles.modalBtnRow}>
-                  <TouchableOpacity
-                    style={[
-                      styles.modalBtn,
-                      selected.isActive === true &&
-                      styles.modalBtnActiveVert,
-                    ]}
-                    onPress={() => toggleStatut(selected.id, true)}
-                  >
-                    <Text style={styles.modalBtnIcon}>✅</Text>
-                    <Text
-                      style={[
-                        styles.modalBtnText,
-                        selected.isActive === true && { color: "#4ADE80" },
-                      ]}
+                {
+                  role === "owner" && selected.email !== user?.email && (
+                    <View style={styles.modalBtnRow}>
+                      <TouchableOpacity
+                        style={[
+                          styles.modalBtn,
+                          selected.isActive === true &&
+                          styles.modalBtnActiveVert,
+                        ]}
+                        onPress={() => toggleStatut(selected.id, true)}
+                      >
+                        <Text style={styles.modalBtnIcon}>✅</Text>
+                        <Text
+                          style={[
+                            styles.modalBtnText,
+                            selected.isActive === true && { color: "#4ADE80" },
+                          ]}
+                        >
+                          Autoriser
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.modalBtn,
+                          selected.isActive === false &&
+                          styles.modalBtnActiveRouge,
+                        ]}
+                        onPress={() => toggleStatut(selected.id, false)}
+                      >
+                        <Text style={styles.modalBtnIcon}>🚫</Text>
+                        <Text
+                          style={[
+                            styles.modalBtnText,
+                            selected.isActive === false && { color: "#F87171" },
+                          ]}
+                        >
+                          Bloquer
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  )
+                }
+                {
+                  selected.email !== user?.email && (
+                    <TouchableOpacity
+                      style={styles.modalInterphone}
+                      onPress={() => {
+                        setSelected(null);
+                        router.push("/interphone");
+                      }}
                     >
-                      Autoriser
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.modalBtn,
-                      selected.isActive === false &&
-                      styles.modalBtnActiveRouge,
-                    ]}
-                    onPress={() => toggleStatut(selected.id, false)}
-                  >
-                    <Text style={styles.modalBtnIcon}>🚫</Text>
-                    <Text
-                      style={[
-                        styles.modalBtnText,
-                        selected.isActive === false && { color: "#F87171" },
-                      ]}
+                      <Text style={styles.modalInterphoneIcon}>📞</Text>
+                      <Text style={styles.modalInterphoneText}>
+                        Parler via interphone
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                }
+                {
+                  role === "owner" && selected.email !== user?.email && (
+                    <TouchableOpacity
+                      style={styles.modalDelete}
+                      onPress={() => {
+                        Alert.alert("Confirmer", `Supprimer ${selected.username} ?`, [
+                          { text: "Annuler", style: "cancel" },
+                          {
+                            text: "Supprimer",
+                            style: "destructive",
+                            onPress: () => deletePerson(selected.id),
+                          },
+                        ]);
+                      }}
                     >
-                      Bloquer
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-                <TouchableOpacity
-                  style={styles.modalInterphone}
-                  onPress={() => {
-                    setSelected(null);
-                    router.push("/interphone");
-                  }}
-                >
-                  <Text style={styles.modalInterphoneIcon}>📞</Text>
-                  <Text style={styles.modalInterphoneText}>
-                    Parler via interphone
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.modalDelete}
-                  onPress={() => {
-                    Alert.alert("Confirmer", `Supprimer ${selected.username} ?`, [
-                      { text: "Annuler", style: "cancel" },
-                      {
-                        text: "Supprimer",
-                        style: "destructive",
-                        onPress: () => deletePerson(selected.id),
-                      },
-                    ]);
-                  }}
-                >
-                  <Text style={styles.modalDeleteText}>
-                    🗑️ Supprimer cette personne
-                  </Text>
-                </TouchableOpacity>
+                      <Text style={styles.modalDeleteText}>
+                        🗑️ Supprimer cette personne
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                }
                 <TouchableOpacity
                   style={styles.modalClose}
                   onPress={() => setSelected(null)}

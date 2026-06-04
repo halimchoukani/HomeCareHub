@@ -11,7 +11,7 @@ import { useResponsive } from '../../hooks/useResponsive';
 function DesktopNavbar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { logout } = useUser();
+  const { logout, role } = useUser();
 
   const navItems = [
     { name: 'Home', icon: 'home', path: '/home' },
@@ -36,6 +36,9 @@ function DesktopNavbar() {
         <View style={styles.navLinks}>
           {navItems.map((item) => {
             const isActive = pathname === item.path;
+            if (item.path === "/interphone" && role !== "owner") {
+              return null;
+            }
             return (
               <TouchableOpacity
                 key={item.path}
@@ -70,6 +73,7 @@ function DesktopNavbar() {
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const { isDesktop } = useResponsive();
+  const { role } = useUser();
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0D0D1A' }}>
@@ -128,8 +132,12 @@ export default function TabsLayout() {
           options={{
             title: 'Interphone',
             tabBarIcon: ({ color }) => <Ionicons name="call" color={color} size={22} />,
+            href: role !== "owner" ? null : "/interphone",
           }}
+
         />
+
+
         <Tabs.Screen
           name="contact-admin"
           options={{

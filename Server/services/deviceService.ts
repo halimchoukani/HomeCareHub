@@ -174,8 +174,21 @@ export const getPersonsByDeviceId = async ({ deviceId }: { deviceId: number }) =
 
 export const getUserDevices = async ({ userId }: { userId: number }) => {
     try {
-        const devices = await prisma.device.findMany({
+        const persons = await prisma.person.findMany({
             where: { userId: userId },
+            omit: { faceEmbedding: true },
+        });
+        const deviceIds = persons.map(person => person.deviceId);
+        const devices = await prisma.device.findMany({
+            where: { id: { in: deviceIds } },
+            include: {
+                persons: {
+                    where: { userId: userId },
+                },
+                _count: {
+                    select: { persons: true },
+                },
+            },
         });
         if (!devices) {
             return { error: 'No devices found for this user', status: 404 };

@@ -85,7 +85,7 @@ export default function Surveillance() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {role === 'admin' && (
+        {role === 'owner' && (
           <>
             <View style={[styles.liveCard, isDesktop && { maxWidth: 800, alignSelf: 'center', width: '100%' }]}>
               <View style={[styles.liveScreen, !selected.active && styles.liveScreenOff]}>
