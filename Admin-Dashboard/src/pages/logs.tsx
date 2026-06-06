@@ -3,14 +3,14 @@ import LogsView from "../components/LogsView";
 
 interface LogsProps {
   loading: boolean;
-  messageHistory: any[];
+  auditLogs: any[];
 }
 
-export default function Logs({ loading, messageHistory }: LogsProps) {
+export default function Logs({ loading, auditLogs }: LogsProps) {
   return (
     <LogsView
       loading={loading}
-      messageHistory={messageHistory}
+      auditLogs={auditLogs}
     />
   );
 }

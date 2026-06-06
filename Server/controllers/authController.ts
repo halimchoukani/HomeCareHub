@@ -83,3 +83,27 @@ export const getCurrentUser = async (req: AuthRequest, res: Response): Promise<v
     res.status(500).json({ error: 'Failed to fetch current user' });
   }
 };
+
+export const getUserLogs = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    const logs = await prisma.log.findMany({
+      where: {
+        userId,
+        action: {
+          in: ["USER_CREATED", "USER_JOINED_DEVICE", "USER_ADDED_PERSON", "USER_DELETED_PERSON"]
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+    res.json(logs);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch user logs' });
+  }
+};

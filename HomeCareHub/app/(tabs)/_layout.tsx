@@ -19,6 +19,7 @@ function DesktopNavbar() {
     { name: 'Alertes', icon: 'notifications', path: '/alertes' },
     { name: 'Caméras', icon: 'videocam', path: '/surveillance' },
     { name: 'Interphone', icon: 'call', path: '/interphone' },
+    { name: 'Activité', icon: 'list', path: '/logs' },
   ];
 
   const handleLogout = async () => {
@@ -143,6 +144,13 @@ export default function TabsLayout() {
           options={{
             title: 'Support',
             tabBarIcon: ({ color }) => <Ionicons name="headset" color={color} size={22} />,
+          }}
+        />
+        <Tabs.Screen
+          name="logs"
+          options={{
+            title: 'Activité',
+            tabBarIcon: ({ color }) => <Ionicons name="list" color={color} size={22} />,
           }}
         />
         <Tabs.Screen

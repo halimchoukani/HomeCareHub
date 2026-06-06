@@ -19,6 +19,7 @@ import { fetchDashboardData as apiFetchDashboard } from "./api/dashboard";
 import { fetchUsers as apiFetchUsers, deleteUser } from "./api/users";
 import { fetchDevices as apiFetchDevices, deleteDevice, createDevice } from "./api/devices";
 import { sendDirectMessage, sendGlobalBroadcast } from "./api/messages";
+import { fetchLogs as apiFetchLogs } from "./api/logs";
 
 import { DashboardPayload, User as TypeUser, Device as TypeDevice } from "./types";
 import DashboardPage from "./pages/dashboard";
@@ -49,11 +50,13 @@ export default function App() {
   const [dashboardData, setDashboardData] = useState<DashboardPayload | null>(null);
   const [usersList, setUsersList] = useState<TypeUser[]>([]);
   const [devicesList, setDevicesList] = useState<TypeDevice[]>([]);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
 
   // Telemetry load toggles
   const [loadingDashboard, setLoadingDashboard] = useState<boolean>(true);
   const [loadingUsers, setLoadingUsers] = useState<boolean>(true);
   const [loadingDevices, setLoadingDevices] = useState<boolean>(true);
+  const [loadingLogs, setLoadingLogs] = useState<boolean>(true);
 
   // Broadcast overlay controller
   const [broadcastOpen, setBroadcastOpen] = useState(false);
@@ -138,10 +141,23 @@ export default function App() {
     }
   };
 
+  const fetchLogs = async (activeToken: string) => {
+    try {
+      setLoadingLogs(true);
+      const l = await apiFetchLogs(activeToken);
+      setAuditLogs(l);
+    } catch (err: any) {
+      pushToast("error", "Audit Logs Sync Failed", err.message || "Failed retrieving logs");
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
   const loadAllEndpoints = (activeToken: string) => {
     fetchDashboardData(activeToken);
     fetchUsers(activeToken);
     fetchDevices(activeToken);
+    fetchLogs(activeToken);
   };
 
   // 3. Socket Connection Lifecycle setup
@@ -154,6 +170,8 @@ export default function App() {
 
     socket.on("connect", () => {
       setGatewayStatus("connected");
+      // Join the admin broadcast room for real-time log streaming
+      socket.emit("join_admin_room");
       // Authenticate admin socket to join corresponding admin logs update broadcast channels
       socket.emit("authenticate_user", "admin_operator_account");
       pushToast("system", "Websocket Channel Secure", "Active dual-throw link established with standard Express node.");
@@ -198,6 +216,12 @@ export default function App() {
           messageHistory: [newLog, ...prev.messageHistory]
         };
       });
+    });
+
+    // Real-time log ingestion – prepend new log entry without full refetch
+    socket.on("new_log", (incomingLog) => {
+      setAuditLogs((prev) => [incomingLog, ...prev]);
+      pushToast("system", "New Activity Logged", incomingLog.details || "A system event was recorded.");
     });
 
     return () => {
@@ -508,8 +532,8 @@ export default function App() {
                 } />
                 <Route path="/logs" element={
                   <LogsPage
-                    loading={loadingDashboard}
-                    messageHistory={dashboardData?.messageHistory || []}
+                    loading={loadingLogs}
+                    auditLogs={auditLogs}
                   />
                 } />
               </Routes>

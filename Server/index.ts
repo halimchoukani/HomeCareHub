@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import http from "http";
 import { Server } from "socket.io";
+import { setIo } from "./socketInstance";
 import authRoutes from "./routes/authRoutes";
 import deviceRoutes from "./routes/deviceRoutes";
 import adminRoutes from "./routes/adminRoutes";
@@ -17,19 +18,27 @@ const io = new Server(server, {
   }
 });
 
+// Register io with the singleton so services/controllers can emit events
+setIo(io);
 app.set("io", io);
 
 io.on("connection", (socket) => {
   console.log("A user connected:", socket.id);
 
+  // Regular users join their personal room for direct messages
   socket.on("join", (userId) => {
     socket.join(`user_${userId}`);
     console.log(`User ${userId} joined room user_${userId}`);
   });
 
+  // Admin dashboard joins the admin room to receive all log broadcasts
+  socket.on("join_admin_room", () => {
+    socket.join("admin_room");
+    console.log(`Admin socket ${socket.id} joined admin_room`);
+  });
+
   socket.on("contact_admin", (data) => {
     console.log("Message received for admin from user:", data);
-    // Broadcast to a specific admin room or simply auto-reply for demo purposes
     socket.emit("admin_reply", { 
       sender: "Admin", 
       message: "Bonjour, votre message a été reçu. Un administrateur va vous répondre sous peu.",

@@ -1,6 +1,18 @@
 import prisma from "../db";
 import { getFaceEmbadding } from "./face";
 
+// Helper to emit new_log without crashing if socket not ready
+const emitNewLog = (log: any, userId?: number) => {
+    try {
+        const { getIo } = require("../socketInstance");
+        const io = getIo();
+        if (io) {
+            io.to("admin_room").emit("new_log", log);
+            if (userId) io.to(`user_${userId}`).emit("new_log", log);
+        }
+    } catch (_) { /* socket not critical */ }
+};
+
 export const isAssignedToUser = async ({ deviceId, userId }: { deviceId: number, userId: number }) => {
     try {
         const device = await prisma.device.findUnique({
@@ -46,6 +58,26 @@ export const addPerson = async ({ deviceId, user, userEmail, role }: any) => {
             omit: { faceEmbedding: true },
         });
 
+        if (role !== "owner") {
+            const addingUser = await prisma.user.findUnique({
+                where: { id: user },
+            });
+            const device = await prisma.device.findUnique({
+                where: { id: parseInt(deviceId as string, 10) },
+            });
+            const addingUsername = addingUser ? addingUser.username : `User #${user}`;
+            const deviceName = device ? device.name : `Device #${deviceId}`;
+            const newLog = await prisma.log.create({
+                data: {
+                    userId: user,
+                    action: "USER_ADDED_PERSON",
+                    details: `${addingUsername} added ${personUser.username} as ${role} to device ${deviceName}`,
+                },
+                include: { user: { select: { username: true, email: true } } }
+            });
+            emitNewLog(newLog, user);
+        }
+
         return { person, status: 201 };
     } catch (error) {
         console.error('addPersonToDevice error:', error);
@@ -68,7 +100,7 @@ export const assignDevice = async ({ deviceId, user }: { deviceId: number, user:
         }
         const owner = await prisma.user.findUnique({
             where: { id: user },
-            select: { email: true },
+            select: { email: true, username: true },
         });
         if (!owner) {
             return { error: 'Owner not found', status: 404 };
@@ -77,6 +109,17 @@ export const assignDevice = async ({ deviceId, user }: { deviceId: number, user:
         if (addUser.error) {
             return { error: addUser.error, status: addUser.status };
         }
+
+        const newLog = await prisma.log.create({
+            data: {
+                userId: user,
+                action: "USER_JOINED_DEVICE",
+                details: `${owner.username} joined device ${device.name}`,
+            },
+            include: { user: { select: { username: true, email: true } } }
+        });
+        emitNewLog(newLog, user);
+
         return { device, status: 200 };
     } catch (error) {
         console.error('assignDevice error:', error);
@@ -199,6 +242,3 @@ export const getUserDevices = async ({ userId }: { userId: number }) => {
         return { error: 'Failed to get devices for this user', status: 500 };
     }
 }
-
-
-

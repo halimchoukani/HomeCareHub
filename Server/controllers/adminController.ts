@@ -177,3 +177,29 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+export const getLogs = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const logs = await prisma.log.findMany({
+      where: {
+        action: {
+          in: ["USER_CREATED", "USER_JOINED_DEVICE", "USER_ADDED_PERSON"]
+        }
+      },
+      include: {
+        user: {
+          select: {
+            username: true,
+            email: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+    res.json(logs);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch logs' });
+  }
+};
+

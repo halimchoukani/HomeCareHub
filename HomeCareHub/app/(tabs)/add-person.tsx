@@ -45,7 +45,7 @@ export default function AddPerson() {
       const data = await response.json();
       if (response.ok) {
         Alert.alert('Succès', `${email} a été ajouté(e) !`, [
-          { text: 'OK', onPress: () => router.replace('/home') },
+          { text: 'OK', onPress: () => setTimeout(() => router.replace('/home'), 0) },
         ]);
       } else {
         Alert.alert('Erreur', data.error);

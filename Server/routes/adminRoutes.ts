@@ -6,7 +6,8 @@ import {
   getAllDevices,
   deleteDevice,
   sendMessageToUser,
-  toggleAdmin
+  toggleAdmin,
+  getLogs
 } from '../controllers/adminController';
 import { authorizeAdmin } from '../middlewares/authMiddleware';
 import { login } from '../controllers/adminController';
@@ -21,4 +22,5 @@ router.delete('/devices/:id', authorizeAdmin, deleteDevice);
 router.post('/message', authorizeAdmin, sendMessageToUser);
 router.post('/login', login);
 router.put('/toggle-admin/:id', authorizeAdmin, toggleAdmin);
+router.get('/logs', authorizeAdmin, getLogs);
 export default router;

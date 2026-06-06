@@ -1,10 +1,12 @@
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { useState, useCallback } from 'react';
 import {
   Alert, FlatList, StatusBar, StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsive } from '../../hooks/useResponsive';
+import { useUser } from '../../contexts/UserContext';
+import { API_URL } from '../../constants/api';
 
 interface Alerte {
   id: string;
@@ -17,16 +19,25 @@ interface Alerte {
   lu: boolean;
 }
 
-const MOCK_ALERTS: Alerte[] = [
-  { id: 'a1', type: 'critique', icon: '⚠️', title: 'Visiteur suspect détecté', desc: 'Personne inconnue à l\'entrée principale', time: 'Il y a 5 min', date: "Aujourd'hui", lu: false },
-  { id: 'a2', type: 'info', icon: '✅', title: 'Accès autorisé', desc: 'Dr. Paul Renard a accédé au domicile', time: 'Il y a 2h', date: "Aujourd'hui", lu: false },
-  { id: 'a3', type: 'warning', icon: '🔒', title: 'Tentative d\'accès refusée', desc: 'Badge inconnu utilisé à la porte', time: 'Il y a 3h', date: "Aujourd'hui", lu: true },
-  { id: 'a4', type: 'medical', icon: '🏥', title: 'Caméra médicale activée', desc: 'Activée par infirmière Sophie Laurent', time: '14:05', date: 'Hier', lu: true },
-  { id: 'a5', type: 'critique', icon: '🚨', title: 'Tentative d\'intrusion', desc: 'Détection mouvement zone extérieure', time: '23:12', date: 'Hier', lu: true },
-  { id: 'a6', type: 'info', icon: '✅', title: 'Porte verrouillée', desc: 'Serrure connectée verrouillée à distance', time: '20:30', date: 'Hier', lu: true },
-  { id: 'a7', type: 'warning', icon: '📷', title: 'Caméra hors ligne', desc: 'Caméra Salon déconnectée', time: '10:00', date: '19 Mars', lu: true },
-  { id: 'a8', type: 'medical', icon: '⚕️', title: 'Intervention médicale', desc: 'Accès prioritaire accordé aux secours', time: '08:45', date: '18 Mars', lu: true },
-];
+const formatLogDate = (dateString: string) => {
+  const date = new Date(dateString);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+
+  if (date.toDateString() === today.toDateString()) {
+    return "Aujourd'hui";
+  } else if (date.toDateString() === yesterday.toDateString()) {
+    return "Hier";
+  } else {
+    return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+  }
+};
+
+const formatLogTime = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+};
 
 const TYPE_CONFIG: Record<string, { bg: string; border: string; badgeBg: string; color: string; label: string }> = {
   critique: { bg: '#2D1010', border: '#7F1D1D', badgeBg: '#3B1515', color: '#F87171', label: 'Critique' },
@@ -37,7 +48,66 @@ const TYPE_CONFIG: Record<string, { bg: string; border: string; badgeBg: string;
 
 export default function Alertes() {
   const router = useRouter();
-  const [alerts, setAlerts] = useState<Alerte[]>(MOCK_ALERTS);
+  const { token } = useUser();
+  const [alerts, setAlerts] = useState<Alerte[]>([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+      const fetchLogs = async () => {
+        if (!token) return;
+        try {
+          const response = await fetch(`${API_URL}/auth/logs`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (response.ok) {
+            const data = await response.json();
+            if (isMounted) {
+              const formatted: Alerte[] = data.map((log: any) => {
+                let type: 'critique' | 'info' | 'warning' | 'medical' = 'info';
+                let icon = '✅';
+                let title = 'Journal d\'activité';
+
+                if (log.action === 'USER_JOINED_DEVICE') {
+                  type = 'info';
+                  icon = '🔌';
+                  title = 'Dispositif rejoint';
+                } else if (log.action === 'USER_ADDED_PERSON') {
+                  type = 'medical';
+                  icon = '👤';
+                  title = 'Caregiver ajouté';
+                } else if (log.action === 'USER_DELETED_PERSON') {
+                  type = 'critique';
+                  icon = '🚨';
+                  title = 'Personne supprimée';
+                }
+
+                return {
+                  id: log.id.toString(),
+                  type,
+                  icon,
+                  title,
+                  desc: log.details,
+                  time: formatLogTime(log.createdAt),
+                  date: formatLogDate(log.createdAt),
+                  lu: false,
+                };
+              });
+              setAlerts(formatted);
+            }
+          }
+        } catch (error) {
+          console.error("Fetch user logs error:", error);
+        }
+      };
+      fetchLogs();
+      return () => {
+        isMounted = false;
+      };
+    }, [token])
+  );
   const [filter, setFilter] = useState('tous');
   const { isDesktop } = useResponsive();
 

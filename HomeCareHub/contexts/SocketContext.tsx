@@ -3,6 +3,10 @@ import { io, Socket } from 'socket.io-client';
 import { API_URL } from '../constants/api';
 import { useUser } from './UserContext';
 
+// Socket.IO runs at the root of the HTTP server, not under /api
+const SOCKET_URL = API_URL.replace(/\/api$/, '');
+
+
 interface SocketContextType {
   socket: Socket | null;
   connected: boolean;
@@ -24,7 +28,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useUser();
 
   useEffect(() => {
-    const socketInstance = io(API_URL, {
+    const socketInstance = io(SOCKET_URL, {
       transports: ['websocket', 'polling'], // Ensure compatibility
       autoConnect: true,
     });

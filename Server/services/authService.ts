@@ -51,6 +51,27 @@ export const signupService = async ({ username, email, password, phone, isAdmin,
             },
         });
 
+        const newLog = await prisma.log.create({
+            data: {
+                userId: user.id,
+                action: "USER_CREATED",
+                details: `User ${user.username} created an account`,
+            },
+            include: {
+                user: { select: { username: true, email: true } }
+            }
+        });
+
+        // Emit real-time new_log event to admin room and user-specific room
+        try {
+            const { getIo } = require("../socketInstance");
+            const io = getIo();
+            if (io) {
+                io.to("admin_room").emit("new_log", newLog);
+                io.to(`user_${user.id}`).emit("new_log", newLog);
+            }
+        } catch (_) { /* socket not critical – continue */ }
+
         const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1d' });
         return { token, status: 201 };
     } catch (error) {

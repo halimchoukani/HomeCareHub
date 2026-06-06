@@ -5,6 +5,7 @@ import { getUserIdFromToken } from '../middlewares/authMiddleware';
 import { getFaceEmbadding } from '../services/face';
 const { uploadImageToCloudinary } = require('./cloudinaryController');
 import mqtt from 'mqtt';
+import { getIo } from '../socketInstance';
 import { addPerson, assignDevice, getPersonsByDeviceId, getRoleFromDevice, getUserDevices, isAssignedToUser, removePersonFromDevice, unassignDevice } from '../services/deviceService';
 
 export const createDevice = async (req: Request, res: Response) => {
@@ -60,11 +61,53 @@ export const removePerson = async (req: Request, res: Response) => {
     if (!isAssigned) {
       return res.status(403).json({ error: 'You do not have permission to perform this action' });
     }
-    const result: any = await removePersonFromDevice({ deviceId: parseInt(deviceId as string, 10), userId });
+
+    const person = await prisma.person.findUnique({
+      where: { id: parseInt(personId as string, 10) }
+    });
+    if (!person) {
+      return res.status(404).json({ error: 'Person not found' });
+    }
+
+    const deletedUser = await prisma.user.findUnique({
+      where: { id: person.userId }
+    });
+
+    const result: any = await removePersonFromDevice({ deviceId: parseInt(deviceId as string, 10), userId: person.userId });
     if (result.error) {
       return res.status(result.status).json({ error: result.error });
     }
-    return res.status(result.status).json(result.person);
+
+    const deletingUser = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+    const device = await prisma.device.findUnique({
+      where: { id: parseInt(deviceId as string, 10) }
+    });
+
+    const deletingUsername = deletingUser ? deletingUser.username : `User #${userId}`;
+    const deletedUsername = deletedUser ? deletedUser.username : `User #${person.userId}`;
+    const deviceName = device ? device.name : `Device #${deviceId}`;
+
+    const newLog = await prisma.log.create({
+      data: {
+        userId: userId,
+        action: "USER_DELETED_PERSON",
+        details: `${deletingUsername} deleted ${deletedUsername} from device ${deviceName}`
+      },
+      include: { user: { select: { username: true, email: true } } }
+    });
+
+    // Real-time broadcast
+    try {
+      const io = getIo();
+      if (io) {
+        io.to("admin_room").emit("new_log", newLog);
+        io.to(`user_${userId}`).emit("new_log", newLog);
+      }
+    } catch (_) { /* non-critical */ }
+
+    return res.status(result.status).json(result);
   } catch (error) {
     console.error('removePerson error:', error);
     res.status(500).json({ error: 'Failed to remove person' });
