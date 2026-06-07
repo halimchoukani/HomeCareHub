@@ -112,6 +112,7 @@ export default function TabsLayout() {
           options={{
             title: 'Contrôle',
             tabBarIcon: ({ color }) => <Ionicons name="shield-checkmark" color={color} size={22} />,
+            href: role !== "owner" ? null : "/controle-acces",
           }}
         />
         <Tabs.Screen
@@ -119,6 +120,7 @@ export default function TabsLayout() {
           options={{
             title: 'Alertes',
             tabBarIcon: ({ color }) => <Ionicons name="notifications" color={color} size={22} />,
+            href: role !== "owner" ? null : "/alertes",
           }}
         />
         <Tabs.Screen

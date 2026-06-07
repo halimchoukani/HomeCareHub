@@ -17,7 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { API_URL, api } from "../../constants/api";
 import { useUser } from "../../contexts/UserContext";
 import { useResponsive } from "../../hooks/useResponsive";
-import { getPersonsByDevice, toggleBlockStatus } from "@/hooks/useDevice";
+import { getPersonsByDevice, removePersonFromDevice, toggleBlockStatus } from "@/hooks/useDevice";
 
 interface Personne {
   id: number;
@@ -99,10 +99,10 @@ export default function ControleAcces() {
 
   const deletePerson = async (id: number) => {
     try {
-      await fetch(`${API_URL}/api/personnes/${id}/supprimer/`, {
-        method: "DELETE",
-        headers,
-      });
+      const response = await removePersonFromDevice(parseInt(deviceId!), id);
+      if (!response) {
+        throw new Error("Error while removing person");
+      }
       setPersons((prev) => prev.filter((p) => p.id !== id));
       setSelected(null);
     } catch {

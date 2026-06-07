@@ -85,7 +85,7 @@ export default function Surveillance() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {role === 'owner' && (
+        {role === 'owner' || role === 'elder' && (
           <>
             <View style={[styles.liveCard, isDesktop && { maxWidth: 800, alignSelf: 'center', width: '100%' }]}>
               <View style={[styles.liveScreen, !selected.active && styles.liveScreenOff]}>
@@ -137,28 +137,38 @@ export default function Surveillance() {
                 </TouchableOpacity>
               ))}
             </View>
+            {
+              role !== "elder" && (
+                <>
+                  <Text style={styles.sectionTitle}>Commande serrure</Text>
+                  <View style={styles.doorCard}>
+                    <TouchableOpacity style={[styles.doorBtn, styles.doorBtnOpen]} onPress={() => Alert.alert('🔓 Porte ouverte', 'Serrure déverrouillée à distance.')}>
+                      <Text style={styles.doorBtnIcon}>🔓</Text><Text style={[styles.doorBtnText, { color: '#4ADE80' }]}>Ouvrir</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.doorBtn, styles.doorBtnLock]} onPress={() => Alert.alert('🔒 Porte verrouillée', 'Serrure verrouillée à distance.')}>
+                      <Text style={styles.doorBtnIcon}>🔒</Text><Text style={[styles.doorBtnText, { color: '#F87171' }]}>Verrouiller</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
 
-            <Text style={styles.sectionTitle}>Commande serrure</Text>
-            <View style={styles.doorCard}>
-              <TouchableOpacity style={[styles.doorBtn, styles.doorBtnOpen]} onPress={() => Alert.alert('🔓 Porte ouverte', 'Serrure déverrouillée à distance.')}>
-                <Text style={styles.doorBtnIcon}>🔓</Text><Text style={[styles.doorBtnText, { color: '#4ADE80' }]}>Ouvrir</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.doorBtn, styles.doorBtnLock]} onPress={() => Alert.alert('🔒 Porte verrouillée', 'Serrure verrouillée à distance.')}>
-                <Text style={styles.doorBtnIcon}>🔒</Text><Text style={[styles.doorBtnText, { color: '#F87171' }]}>Verrouiller</Text>
-              </TouchableOpacity>
-            </View>
           </>
         )}
+        {
+          role !== "elder" && (
+            <>
+              <Text style={styles.sectionTitle}>Télésurveillance médicale</Text>
+              <View style={[styles.medCard, medActive && styles.medCardActive]}>
+                <Text style={styles.medCardTitle}>{medActive ? '🏥 Télésurveillance active' : '🏥 Activation conditionnelle'}</Text>
+                <Text style={styles.medCardText}>Permet l&apos;activation temporaire de la cam&eacute;ra int&eacute;rieure par un professionnel de sant&eacute; autoris&eacute;. Requiert un consentement num&eacute;rique obligatoire.</Text>
+                <TouchableOpacity style={[styles.medBtn, medActive && styles.medBtnActive]}
+                  onPress={medActive ? () => { setMedActive(false); Alert.alert('Désactivé', 'Télésurveillance médicale désactivée.'); } : handleMedical}>
+                  <Text style={styles.medBtnText}>{medActive ? '⏹ Désactiver' : '▶ Activer pour professionnel de santé'}</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
 
-        <Text style={styles.sectionTitle}>Télésurveillance médicale</Text>
-        <View style={[styles.medCard, medActive && styles.medCardActive]}>
-          <Text style={styles.medCardTitle}>{medActive ? '🏥 Télésurveillance active' : '🏥 Activation conditionnelle'}</Text>
-          <Text style={styles.medCardText}>Permet l&apos;activation temporaire de la cam&eacute;ra int&eacute;rieure par un professionnel de sant&eacute; autoris&eacute;. Requiert un consentement num&eacute;rique obligatoire.</Text>
-          <TouchableOpacity style={[styles.medBtn, medActive && styles.medBtnActive]}
-            onPress={medActive ? () => { setMedActive(false); Alert.alert('Désactivé', 'Télésurveillance médicale désactivée.'); } : handleMedical}>
-            <Text style={styles.medBtnText}>{medActive ? '⏹ Désactiver' : '▶ Activer pour professionnel de santé'}</Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );

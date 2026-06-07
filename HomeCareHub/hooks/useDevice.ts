@@ -34,6 +34,22 @@ export const getPersonsByDevice = async (deviceId: number) => {
     }
 }
 
+export const removePersonFromDevice = async (deviceId: number, personId: number) => {
+    try {
+        const token = await getTokenFromStorage();
+
+        const res = await api.delete(`/devices/${deviceId}/persons/${personId}/`, {
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        return res.data;
+    } catch (error: any) {
+        console.error("Error while removing person: ", error.response?.data || error.message);
+        return null;
+    }
+}
 
 export const toggleBlockStatus = async (deviceId: number, personId: number, action: string) => {
     try {
