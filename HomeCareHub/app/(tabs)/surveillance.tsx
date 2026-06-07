@@ -85,7 +85,7 @@ export default function Surveillance() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {role === 'owner' || role === 'elder' && (
+        {(role === 'owner' || role === 'elder') && (
           <>
             <View style={[styles.liveCard, isDesktop && { maxWidth: 800, alignSelf: 'center', width: '100%' }]}>
               <View style={[styles.liveScreen, !selected.active && styles.liveScreenOff]}>
@@ -150,7 +150,8 @@ export default function Surveillance() {
                     </TouchableOpacity>
                   </View>
                 </>
-              )}
+              )
+            }
 
           </>
         )}
